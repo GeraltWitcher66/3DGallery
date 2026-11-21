@@ -12,6 +12,13 @@ import Intro from './ui/Intro'
 import Lightbox from './ui/Lightbox'
 import Help from './ui/Help'
 import Joystick from './ui/Joystick'
+import LoadingOverlay from './ui/LoadingOverlay'
+
+// The full-screen loader sits above the canvas, so the scene fallback only has
+// to keep the clear color on brand instead of flashing a light frame.
+function SceneFallback() {
+  return <color attach="background" args={['#0d0d0c']} />
+}
 
 export default function App() {
   const [hallId, navigate] = useHallRoute()
@@ -21,7 +28,8 @@ export default function App() {
   const [locked, setLocked] = useState(false)
   const [touch, setTouch] = useState(false)
   const [hint, setHint] = useState(false)
-  const { progress } = useProgress()
+  const { progress, active, total } = useProgress()
+  const ready = total > 0 && progress >= 100 && !active
 
   useEffect(() => {
     setTouch(isTouchDevice())
@@ -75,7 +83,7 @@ export default function App() {
           }}
         >
           <color attach="background" args={['#0a0908']} />
-          <Suspense fallback={null}>
+          <Suspense fallback={<SceneFallback />}>
             <Gallery activeHall={hallId} artworks={ARTWORKS} onOpenArtwork={openArtwork} />
           </Suspense>
           <Player
@@ -105,17 +113,13 @@ export default function App() {
 
       {touch && !introOpen && !selected && !helpOpen && <Joystick />}
 
-      {progress < 100 && !introOpen && (
-        <div className="scene-loader">
-          <span>در حال آماده‌سازی فضا…</span>
-        </div>
-      )}
-
       {selected && <Lightbox art={selected} onClose={closeArtwork} />}
 
       {helpOpen && <Help onClose={() => setHelpOpen(false)} />}
 
-      {introOpen && <Intro onEnter={enter} onNavigate={goHall} progress={progress} />}
+      {introOpen && <Intro onEnter={enter} onNavigate={goHall} progress={progress} ready={ready} />}
+
+      <LoadingOverlay ready={ready} />
     </div>
   )
 }

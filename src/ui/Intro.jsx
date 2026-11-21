@@ -1,6 +1,6 @@
 import { HALL_LIST } from '../data/gallery'
 
-export default function Intro({ onEnter, onNavigate, progress }) {
+export default function Intro({ onEnter, onNavigate, progress, ready }) {
   return (
     <div className="intro">
       <div className="intro-bg" />
@@ -20,7 +20,7 @@ export default function Intro({ onEnter, onNavigate, progress }) {
           جزئیات را با ذره‌بین ببینید.
         </p>
 
-        <button className="btn-gold" onClick={onEnter}>
+        <button className="btn-gold" onClick={onEnter} disabled={!ready}>
           ورود به گالری
           <span className="btn-arrow">←</span>
         </button>

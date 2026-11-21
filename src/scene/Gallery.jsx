@@ -230,7 +230,7 @@ function makeSignTexture(title, subtitle) {
   ctx.direction = 'rtl'
   ctx.textAlign = 'right'
   ctx.fillStyle = '#e8dcc6'
-  ctx.font = '300 108px Vazirmatn, Tahoma, sans-serif'
+      ctx.font = '300 108px "Vazirmatn Variable", Tahoma, sans-serif'
   ctx.fillText(title, 1000, 130)
   ctx.fillStyle = '#a2957f'
   ctx.font = '400 44px "Cormorant Garamond", Georgia, serif'
@@ -610,7 +610,7 @@ function LobbyWallText() {
     ctx.direction = 'rtl'
     ctx.textAlign = 'center'
     ctx.fillStyle = '#e8dcc6'
-    ctx.font = '300 86px Vazirmatn, Tahoma, sans-serif'
+    ctx.font = '300 86px "Vazirmatn Variable", Tahoma, sans-serif'
     ctx.fillText('سالن‌های نمایشگاهی', 512, 110)
     ctx.font = '400 40px "Cormorant Garamond", Georgia, serif'
     ctx.fillStyle = '#a2957f'

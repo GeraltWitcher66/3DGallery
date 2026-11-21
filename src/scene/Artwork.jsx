@@ -23,15 +23,15 @@ function makeLabelTexture(art) {
   ctx.direction = 'rtl'
   ctx.textAlign = 'right'
   ctx.fillStyle = '#2f2c26'
-  ctx.font = '500 40px Vazirmatn, Tahoma, sans-serif'
+  ctx.font = '500 40px "Vazirmatn Variable", Tahoma, sans-serif'
   ctx.fillText(art.title, c.width - 44, 116)
 
   ctx.fillStyle = '#4a463e'
-  ctx.font = '300 32px Vazirmatn, Tahoma, sans-serif'
+  ctx.font = '300 32px "Vazirmatn Variable", Tahoma, sans-serif'
   ctx.fillText(art.artist, c.width - 44, 176)
 
   ctx.fillStyle = '#7b7364'
-  ctx.font = '300 24px Vazirmatn, Tahoma, sans-serif'
+  ctx.font = '300 24px "Vazirmatn Variable", Tahoma, sans-serif'
   ctx.fillText(`${art.year}  ·  ${art.dims}`, c.width - 44, 236)
 
   ctx.direction = 'ltr'

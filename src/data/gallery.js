@@ -97,7 +97,7 @@ export const WALKABLE = [
 export const ARTWORKS = [
   {
     id: 'AR-1401-01',
-    img: '/art/art-01.jpg',
+    img: '/art/art-01.webp',
     aspect: 880 / 1184,
     hall: 'lobby',
     artist: 'نیلوفر احمدی',
@@ -111,7 +111,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1400-07',
-    img: '/art/art-02.jpg',
+    img: '/art/art-02.webp',
     aspect: 1184 / 880,
     hall: 'lobby',
     artist: 'سیاوش رادمنش',
@@ -125,7 +125,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1399-03',
-    img: '/art/art-03.jpg',
+    img: '/art/art-03.webp',
     aspect: 880 / 1184,
     hall: 'lobby',
     artist: 'مریم کاشانی',
@@ -140,7 +140,7 @@ export const ARTWORKS = [
 
   {
     id: 'AR-1402-04',
-    img: '/art/art-04.jpg',
+    img: '/art/art-04.webp',
     aspect: 880 / 1184,
     hall: 'hall-1',
     artist: 'بهرام صفوی',
@@ -154,7 +154,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1401-05',
-    img: '/art/art-05.jpg',
+    img: '/art/art-05.webp',
     aspect: 1184 / 880,
     hall: 'hall-1',
     artist: 'نگار موسوی',
@@ -168,7 +168,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1398-06',
-    img: '/art/art-06.jpg',
+    img: '/art/art-06.webp',
     aspect: 880 / 1184,
     hall: 'hall-1',
     artist: 'آرش نیکو',
@@ -183,7 +183,7 @@ export const ARTWORKS = [
 
   {
     id: 'AR-1397-07',
-    img: '/art/art-07.jpg',
+    img: '/art/art-07.webp',
     aspect: 1184 / 880,
     hall: 'hall-2',
     artist: 'لیلا فرهمند',
@@ -197,7 +197,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1400-08',
-    img: '/art/art-08.jpg',
+    img: '/art/art-08.webp',
     aspect: 880 / 1184,
     hall: 'hall-2',
     artist: 'کامران یزدانی',
@@ -211,7 +211,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1403-12',
-    img: '/art/art-12.jpg',
+    img: '/art/art-12.webp',
     aspect: 880 / 1184,
     hall: 'hall-2',
     artist: 'حسین آذر',
@@ -226,7 +226,7 @@ export const ARTWORKS = [
 
   {
     id: 'AR-1402-09',
-    img: '/art/art-09.jpg',
+    img: '/art/art-09.webp',
     aspect: 880 / 1184,
     hall: 'hall-3',
     artist: 'پریسا امینی',
@@ -240,7 +240,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1401-10',
-    img: '/art/art-10.jpg',
+    img: '/art/art-10.webp',
     aspect: 1,
     hall: 'hall-3',
     artist: 'رضا مهرابی',
@@ -254,7 +254,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1402-13',
-    img: '/art/art-13.jpg',
+    img: '/art/art-13.webp',
     aspect: 1184 / 880,
     hall: 'hall-3',
     artist: 'نگار موسوی',
@@ -269,7 +269,7 @@ export const ARTWORKS = [
 
   {
     id: 'AR-1399-11',
-    img: '/art/art-11.jpg',
+    img: '/art/art-11.webp',
     aspect: 1184 / 880,
     hall: 'hall-4',
     artist: 'آناهیتا کریمی',
@@ -283,7 +283,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1401-15',
-    img: '/art/art-15.jpg',
+    img: '/art/art-15.webp',
     aspect: 1,
     hall: 'hall-4',
     artist: 'فرناز نوری',
@@ -297,7 +297,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1402-18',
-    img: '/art/art-18.jpg',
+    img: '/art/art-18.webp',
     aspect: 1184 / 880,
     hall: 'hall-4',
     artist: 'رها سعیدی',
@@ -312,7 +312,7 @@ export const ARTWORKS = [
 
   {
     id: 'AR-1400-14',
-    img: '/art/art-14.jpg',
+    img: '/art/art-14.webp',
     aspect: 880 / 1184,
     hall: 'hall-5',
     artist: 'سحر بینا',
@@ -326,7 +326,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1398-16',
-    img: '/art/art-16.jpg',
+    img: '/art/art-16.webp',
     aspect: 1184 / 880,
     hall: 'hall-5',
     artist: 'کامران یزدانی',
@@ -340,7 +340,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1403-17',
-    img: '/art/art-17.jpg',
+    img: '/art/art-17.webp',
     aspect: 880 / 1184,
     hall: 'hall-5',
     artist: 'بهرام صفوی',
@@ -354,7 +354,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1403-19',
-    img: '/art/art-19.jpg',
+    img: '/art/art-19.webp',
     aspect: 880 / 1184,
     hall: 'corridor',
     artist: 'رها سعیدی',
@@ -368,7 +368,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1400-20',
-    img: '/art/art-20.jpg',
+    img: '/art/art-20.webp',
     aspect: 880 / 1184,
     hall: 'corridor',
     artist: 'آرش نیکو',
@@ -382,7 +382,7 @@ export const ARTWORKS = [
   },
   {
     id: 'AR-1401-21',
-    img: '/art/art-21.jpg',
+    img: '/art/art-21.webp',
     aspect: 880 / 1184,
     hall: 'corridor',
     artist: 'سحر بینا',

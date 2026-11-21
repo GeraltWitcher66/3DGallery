@@ -20,7 +20,7 @@ export function useTiled(base, rx, ry) {
 
 export function useGalleryTextures() {
   const [marble, wood, plaster] = useTexture(
-    ['/tex/marble.jpg', '/tex/wood.jpg', '/tex/plaster.jpg'].map(assetUrl)
+    ['/tex/marble.webp', '/tex/wood.webp', '/tex/plaster.webp'].map(assetUrl)
   )
   return { marble, wood, plaster }
 }

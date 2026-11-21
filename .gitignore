@@ -1,8 +1,5 @@
 node_modules/
 dist/
-screenshots/
-.cloud-attachments/
-.freebuff/
 .DS_Store
 *.local
 .env
