@@ -1,8 +1,12 @@
+import { useModal } from '../lib/useModal'
+
 export default function Help({ onClose }) {
+  const dialogRef = useModal(onClose)
+
   return (
     <div className="modal" role="dialog" aria-modal="true" aria-label="راهنمای گالری">
       <div className="modal-backdrop" onClick={onClose} />
-      <div className="modal-card">
+      <div className="modal-card" ref={dialogRef}>
         <button className="modal-close" onClick={onClose} aria-label="بستن">
           ×
         </button>
@@ -13,27 +17,63 @@ export default function Help({ onClose }) {
           <div className="help-col">
             <h3>دسکتاپ</h3>
             <ul>
-              <li><b>W A S D</b> یا کلیدهای جهت‌دار — حرکت</li>
-              <li><b>ماوس</b> — نگاه (پس از کلیک روی فضا)</li>
-              <li><b>Shift</b> — حرکت سریع‌تر</li>
-              <li><b>Esc</b> — خروج از حالت نگاه</li>
-              <li><b>حرکت ماوس روی اثر</b> — ذره‌بین</li>
+              <li>
+                <b>W A S D</b> یا کلیدهای جهت‌دار — حرکت
+              </li>
+              <li>
+                <b>ماوس</b> — نگاه (پس از کلیک روی فضا)
+              </li>
+              <li>
+                <b>Shift</b> — حرکت سریع‌تر
+              </li>
+              <li>
+                <b>Esc</b> — خروج از حالت نگاه
+              </li>
+              <li>
+                <b>کلیک روی اثر</b> — نمای بزرگ
+              </li>
             </ul>
           </div>
           <div className="help-col">
             <h3>موبایل و لمس</h3>
             <ul>
-              <li><b>جوی‌استیک</b> — حرکت در سالن</li>
-              <li><b>کشیدن انگشت</b> — نگاه</li>
-              <li><b>ضربه روی اثر</b> — بزرگ‌نمایی و اطلاعات</li>
-              <li><b>دو انگشت</b> — بزرگ‌نمایی جزئیات</li>
+              <li>
+                <b>جوی‌استیک</b> — حرکت در سالن
+              </li>
+              <li>
+                <b>کشیدن انگشت</b> — نگاه
+              </li>
+              <li>
+                <b>ضربه روی اثر</b> — بزرگ‌نمایی و اطلاعات
+              </li>
+              <li>
+                <b>دو انگشت</b> — بزرگ‌نمایی جزئیات
+              </li>
+            </ul>
+          </div>
+          <div className="help-col">
+            <h3>صفحه‌کلید و دسترس‌پذیری</h3>
+            <ul>
+              <li>
+                <b>Tab</b> — حرکت میان دکمه‌ها
+              </li>
+              <li>
+                <b>فهرست آثار</b> — باز کردن هر اثر بدون ماوس
+              </li>
+              <li>
+                <b>← →</b> — اثر بعدی و قبلی در نمای نزدیک
+              </li>
+              <li>
+                <b>+ − 0</b> — بزرگ‌نمایی، کوچک‌نمایی، بازنشانی
+              </li>
             </ul>
           </div>
         </div>
 
         <p className="modal-foot">
-          سالن فعلی: از نوار بالای صفحه یا دکمهٔ بازگشت، میان سالن‌ها جابه‌جا شوید. هر سالن نشانی
-          اختصاصی خود را دارد (<span className="mono">/hall-1</span> تا <span className="mono">/hall-5</span>).
+          سالن فعلی: از نوار بالای صفحه یا دکمهٔ بازگشت، میان سالن‌ها جابه‌جا شوید. هر سالن و هر اثر نشانی
+          اختصاصی خود را دارد (<span className="mono">/hall-1</span> و{' '}
+          <span className="mono">/hall-1/AR-1402-04</span>).
         </p>
       </div>
     </div>

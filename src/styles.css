@@ -154,10 +154,10 @@ button {
 
 .nav-pill {
   padding: 8px 15px;
-  font-size: 12.5px;
-  font-weight: 300;
+  font-size: 13px;
+  font-weight: 400;
   border-radius: 999px;
-  color: rgba(240, 233, 220, 0.7);
+  color: rgba(246, 240, 230, 0.86);
   white-space: nowrap;
   transition: color 0.25s ease, background 0.25s ease;
 }
@@ -170,7 +170,7 @@ button {
 .nav-pill.is-active {
   background: linear-gradient(180deg, #ece0c9, #d9c6a1);
   color: #171410;
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .hud-actions {
@@ -236,24 +236,29 @@ button {
   text-align: right;
   pointer-events: auto;
   max-width: 48ch;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(14, 13, 11, 0.62);
+  backdrop-filter: blur(16px);
 }
 
 .hud-current-label {
   margin: 0 0 6px;
   font-family: var(--serif);
-  font-size: 10.5px;
-  letter-spacing: 0.26em;
+  font-size: 11.5px;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: rgba(201, 169, 106, 0.85);
+  color: rgba(214, 182, 118, 0.95);
   direction: ltr;
   text-align: right;
 }
 
 .hud-current h2 {
   margin: 0;
-  font-size: 14px;
-  font-weight: 300;
-  color: rgba(246, 240, 230, 0.95);
+  font-size: 16.5px;
+  font-weight: 400;
+  color: #f8f3ea;
 }
 
 .link-back {
@@ -833,7 +838,7 @@ button {
 
 .help-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 26px;
 }
 
@@ -995,7 +1000,7 @@ button {
     scrollbar-width: none;
     border: 1px solid var(--line);
     border-radius: 999px;
-    background: rgba(14, 13, 11, 0.55);
+    background: rgba(14, 13, 11, 0.72);
     backdrop-filter: blur(18px);
     pointer-events: auto;
   }
@@ -1111,5 +1116,253 @@ button {
   .intro-latin {
     letter-spacing: 0.28em;
     font-size: 9px;
+  }
+}
+
+/* ---------------------------------------------------------
+   Focus, motion preferences, fallbacks
+   --------------------------------------------------------- */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.lb-info :focus-visible,
+.modal-card :focus-visible {
+  outline-color: #8a6d33;
+}
+
+.fatal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 32px;
+  text-align: center;
+  background: #0d0d0c;
+  color: var(--cream);
+}
+
+.fatal-mark {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  color: rgba(201, 169, 106, 0.75);
+}
+
+.fatal h1 {
+  margin: 0;
+  font-size: clamp(20px, 3vw, 27px);
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.fatal-detail {
+  margin: 0;
+  max-width: 46ch;
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 2;
+  color: var(--cream-dim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .intro-bg {
+    animation: none;
+    transform: scale(1.1);
+  }
+}
+
+/* ---------------------------------------------------------
+   Artwork index
+   --------------------------------------------------------- */
+.index-card {
+  width: min(760px, 100%);
+}
+
+.index-intro {
+  margin: 0 0 20px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.index-halls {
+  display: grid;
+  gap: 24px;
+}
+
+.index-hall h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #8a8174;
+}
+
+.index-hall h3 span {
+  font-size: 10.5px;
+  font-weight: 300;
+  color: #a69c8b;
+}
+
+.index-hall ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.index-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: right;
+  border: 1px solid rgba(35, 32, 25, 0.12);
+  border-radius: 2px;
+  background: rgba(35, 32, 25, 0.02);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.index-item:hover,
+.index-item:focus-visible {
+  border-color: rgba(185, 154, 95, 0.7);
+  background: rgba(185, 154, 95, 0.1);
+}
+
+.index-item-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #241f18;
+}
+
+.index-item-meta {
+  font-size: 10.5px;
+  font-weight: 300;
+  color: #7b7364;
+}
+
+/* ---------------------------------------------------------
+   Lightbox stepping + orientation hint
+   --------------------------------------------------------- */
+.lb-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  transform: translateY(-50%);
+  font-size: 24px;
+  line-height: 1;
+  color: rgba(246, 240, 230, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: rgba(16, 15, 13, 0.55);
+  backdrop-filter: blur(12px);
+  transition: border-color 0.25s ease, color 0.25s ease;
+}
+
+.lb-nav:hover {
+  border-color: rgba(201, 169, 106, 0.75);
+  color: #fff;
+}
+
+/* Drawn, not typed: bidi mirroring used to flip ‹ and › inside the RTL page. */
+.lb-nav svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lb-prev {
+  right: 14px;
+}
+
+.lb-next {
+  left: 14px;
+}
+
+.lb-step-hint {
+  margin: 18px 0 0;
+  font-size: 10.5px;
+  color: #8a8174;
+}
+
+.rotate-hint {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 136px);
+  z-index: 33;
+  margin: 0;
+  padding: 9px 15px;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: rgba(240, 233, 220, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(12, 11, 9, 0.55);
+  backdrop-filter: blur(14px);
+  pointer-events: none;
+  animation: fadeUp 0.5s ease both;
+}
+
+/* Comfortable touch targets on phones and tablets. */
+@media (hover: none) {
+  .nav-pill {
+    min-height: 40px;
+    padding: 10px 16px;
+  }
+
+  .ghost-btn {
+    padding: 11px 17px;
+  }
+
+  .lb-close,
+  .zoom-controls button {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 960px) {
+  .lb-nav {
+    top: 12px;
+    bottom: auto;
+    width: 42px;
+    height: 42px;
+    transform: none;
+  }
+
+  .lb-prev {
+    right: 12px;
+  }
+
+  .lb-next {
+    right: 62px;
+    left: auto;
   }
 }

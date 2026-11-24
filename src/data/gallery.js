@@ -3,7 +3,6 @@
 //  All units are metres. Walls sit on the outside of the given bounds.
 // ---------------------------------------------------------------------------
 
-export const CORRIDOR = { x0: -3.5, x1: 3.5, z0: -47, z1: 0, h: 4.8 }
 export const VESTIBULE = { x0: -2.2, x1: 2.2, z0: 16, z1: 19, h: 4.2 }
 
 const west = (n, z0, z1, doorZ, name, en, tagline) => ({
@@ -55,40 +54,21 @@ export const HALLS = {
   'hall-3': west(3, -47, -34, -40.5, 'سالن ۳', 'Hall III — Text & Script', 'متن و نقش'),
   'hall-4': east(4, -19, -6, -12.5, 'سالن ۴', 'Hall IV — Form & Matter', 'شکل و ماده'),
   'hall-5': east(5, -37, -24, -30.5, 'سالن ۵', 'Hall V — Earth & Memory', 'خاک و خاطره'),
-  corridor: {
-    id: 'corridor',
-    name: 'راهروی اصلی',
-    en: 'Main Corridor',
-    tagline: 'منتخب آثار کوچک',
-  },
 }
 
 export const HALL_ORDER = ['lobby', 'hall-1', 'hall-2', 'hall-3', 'hall-4', 'hall-5']
 
 export const HALL_LIST = HALL_ORDER.map((id) => HALLS[id])
 
-// Corridor side openings (one per exhibition hall)
-export const DOORS = HALL_ORDER.filter((id) => id !== 'lobby').map((id) => {
-  const h = HALLS[id]
-  return { ...h.door, hall: id }
-})
-
-// Walkable rectangles — the player is clamped to their union.
+// Walkable rectangles — the player is clamped to their union. Each room is a
+// closed space now: halls are reached through the hall navigation, not a
+// corridor.
 const inset = (b, m) => ({ x0: b.x0 + m, x1: b.x1 - m, z0: b.z0 + m, z1: b.z1 - m })
 
 export const WALKABLE = [
   { x0: -8.5, x1: 8.5, z0: 0.35, z1: 15.8 },
   { x0: VESTIBULE.x0 + 0.7, x1: VESTIBULE.x1 - 0.7, z0: 15.2, z1: 18.3 },
-  { x0: CORRIDOR.x0 + 0.45, x1: CORRIDOR.x1 - 0.45, z0: CORRIDOR.z0 + 0.5, z1: 1.1 },
   ...HALL_ORDER.filter((id) => id !== 'lobby').map((id) => inset(HALLS[id].bounds, 0.5)),
-  ...HALL_ORDER.filter((id) => id !== 'lobby').flatMap((id) => {
-    const h = HALLS[id]
-    const z0 = h.door.center - 1.05
-    const z1 = h.door.center + 1.05
-    return h.side === 'west'
-      ? [{ x0: -4.7, x1: -2.5, z0, z1 }]
-      : [{ x0: 2.5, x1: 4.7, z0, z1 }]
-  }),
 ]
 
 // ---------------------------------------------------------------------------
@@ -164,7 +144,7 @@ export const ARTWORKS = [
     dims: '۷۰ × ۹۰ سانتی‌متر',
     price: 210000000,
     desc: 'باغی که در سنت نگارگری مکانی برای آرامش بود، اینجا به عرصهٔ تنش رنگ بدل شده است: سرخ انار در برابر لاجورد، بدون آنکه هیچ‌کدام برنده شوند.',
-    spot: { x: -16.5, z: -8.3, rotY: Math.PI / 2, y: 1.58, w: 1.7 },
+    spot: { x: -11.5, z: -15, rotY: 0, y: 1.58, w: 1.7 },
   },
   {
     id: 'AR-1398-06',
@@ -178,7 +158,7 @@ export const ARTWORKS = [
     dims: '۹۰ × ۷۰ سانتی‌متر',
     price: 95000000,
     desc: 'یک تمرین آکادمیک که هرگز رها نشد. نیکو در این مطالعه به جای حجم، به رفتار نور روی چین پارچه علاقه دارد؛ جایی که زغال به گچ می‌رسد و لبه‌ها نرم می‌شوند.',
-    spot: { x: -16.5, z: -5.95, rotY: Math.PI / 2, y: 1.66, w: 1.0 },
+    spot: { x: -12, z: -2, rotY: Math.PI, y: 1.66, w: 1.0 },
   },
 
   {
@@ -207,7 +187,7 @@ export const ARTWORKS = [
     dims: '۱۶۰ × ۱۲۰ سانتی‌متر',
     price: 175000000,
     desc: 'آب کم‌عمق، آسمان را به زمین دوخته است. یزدانی این مجموعه را در دو ساعت پیش از غروب ثبت کرده؛ زمانی که رنگ صورتی آسمان دیگر واقعی به نظر نمی‌رسد.',
-    spot: { x: -16.5, z: -24.7, rotY: Math.PI / 2, y: 1.62, w: 1.25 },
+    spot: { x: -9, z: -31, rotY: 0, y: 1.62, w: 1.25 },
   },
   {
     id: 'AR-1403-12',
@@ -221,7 +201,7 @@ export const ARTWORKS = [
     dims: '۱۱۵ × ۸۵ سانتی‌متر',
     price: 145000000,
     desc: 'یک نفس، یک قلم، یک کوه. آذر با کمترین مقدار مرکب، فاصلهٔ میان دو رشته‌کوه را می‌سازد: جایی که کاغذ خالی، خودِ هوا می‌شود.',
-    spot: { x: -16.5, z: -22.6, rotY: Math.PI / 2, y: 1.55, w: 1.0 },
+    spot: { x: -13, z: -18, rotY: Math.PI, y: 1.55, w: 1.0 },
   },
 
   {
@@ -250,7 +230,7 @@ export const ARTWORKS = [
     dims: '۱۰۰ × ۱۰۰ سانتی‌متر',
     price: 230000000,
     desc: 'مهرابی سطح را مانند یک دیوار فرسوده می‌سازد و سپس آن را می‌شکند. شبکهٔ منظم در انتها به بافتی زخمی می‌رسد؛ نظم و فرسایش در یک قاب.',
-    spot: { x: -16.5, z: -40.35, rotY: Math.PI / 2, y: 1.6, w: 1.5 },
+    spot: { x: -10, z: -47, rotY: 0, y: 1.6, w: 1.5 },
   },
   {
     id: 'AR-1402-13',
@@ -264,7 +244,7 @@ export const ARTWORKS = [
     dims: '۱۵۰ × ۱۱۰ سانتی‌متر',
     price: 395000000,
     desc: 'سطح با گچ آماده شده و طلا با حرارت تیره شده است. نور، بسته به زاویهٔ ایستادن بیننده، بین مات و براق جابه‌جا می‌شود؛ اثری که با بدن تماشاگر کامل می‌شود.',
-    spot: { x: -16.5, z: -43.0, rotY: Math.PI / 2, y: 1.6, w: 1.8 },
+    spot: { x: -12.5, z: -34, rotY: Math.PI, y: 1.6, w: 1.8 },
   },
 
   {
@@ -293,7 +273,7 @@ export const ARTWORKS = [
     dims: '۱۲۰ × ۱۲۰ سانتی‌متر',
     price: 275000000,
     desc: 'بافت اثر با دست انجام شده و لبه‌ها عمداً ناتمام مانده‌اند. نوری رنگ‌ها را از فرش‌های کهنهٔ خانهٔ مادربزرگ وام گرفته است؛ خاطره، در اینجا متریال است.',
-    spot: { x: 16.5, z: -12.45, rotY: -Math.PI / 2, y: 1.6, w: 1.5 },
+    spot: { x: 10, z: -19, rotY: 0, y: 1.6, w: 1.5 },
   },
   {
     id: 'AR-1402-18',
@@ -307,7 +287,7 @@ export const ARTWORKS = [
     dims: '۶۰ × ۸۰ سانتی‌متر',
     price: 72000000,
     desc: 'چهار میدان رنگی که با هم گفت‌وگو می‌کنند و هیچ‌کدام مرکز نیست. سعیدی این مجموعه را در یک نشست، بدون اصلاح، کامل کرده است.',
-    spot: { x: 16.5, z: -9.75, rotY: -Math.PI / 2, y: 1.55, w: 1.5 },
+    spot: { x: 12.5, z: -6, rotY: Math.PI, y: 1.55, w: 1.5 },
   },
 
   {
@@ -336,7 +316,7 @@ export const ARTWORKS = [
     dims: '۷۵ × ۱۰۰ سانتی‌متر',
     price: 155000000,
     desc: 'از ارتفاع، شن به پارچه‌ای چین‌خورده شبیه است. یزدانی این تصویر را در نور پایین ثبت کرده تا مرز میان ماده و سایه از بین برود.',
-    spot: { x: 16.5, z: -27.55, rotY: -Math.PI / 2, y: 1.55, w: 1.9 },
+    spot: { x: 10, z: -37, rotY: 0, y: 1.55, w: 1.9 },
   },
   {
     id: 'AR-1403-17',
@@ -350,13 +330,13 @@ export const ARTWORKS = [
     dims: '۱۷۵ × ۱۳۰ سانتی‌متر',
     price: 610000000,
     desc: 'تیره‌ترین اثر مجموعهٔ صفوی. یک گذرگاه روشن در دل سیاهی، آن‌قدر کوچک که فقط با ایستادن در فاصلهٔ نزدیک دیده می‌شود. موم، سطح را مات و نفس‌کشیده نگه داشته است.',
-    spot: { x: 16.5, z: -33.0, rotY: -Math.PI / 2, y: 1.62, w: 1.5 },
+    spot: { x: 12.5, z: -24, rotY: Math.PI, y: 1.62, w: 1.5 },
   },
   {
     id: 'AR-1403-19',
     img: '/art/art-19.webp',
     aspect: 880 / 1184,
-    hall: 'corridor',
+    hall: 'hall-1',
     artist: 'رها سعیدی',
     title: 'سرخِ خاموش',
     year: '۱۴۰۳',
@@ -364,13 +344,13 @@ export const ARTWORKS = [
     dims: '۸۵ × ۶۵ سانتی‌متر',
     price: 98000000,
     desc: 'دو میدان رنگی، یکی سرخِ خاکی و دیگری ذغالی، در برابر هم ایستاده‌اند و فقط یک حرکت روشن میان آن‌ها نفس می‌کشد. سطح مات است تا نور گالری روی آن نلغزد.',
-    spot: { x: -3.5, z: -17.0, rotY: Math.PI / 2, y: 1.6, w: 0.95 },
+    spot: { x: -16.5, z: -5.5, rotY: Math.PI / 2, y: 1.6, w: 0.95 },
   },
   {
     id: 'AR-1400-20',
     img: '/art/art-20.webp',
     aspect: 880 / 1184,
-    hall: 'corridor',
+    hall: 'hall-2',
     artist: 'آرش نیکو',
     title: 'قطعهٔ گچی',
     year: '۱۴۰۰',
@@ -378,13 +358,13 @@ export const ARTWORKS = [
     dims: '۹۰ × ۷۰ سانتی‌متر',
     price: 62000000,
     desc: 'بخشی از یک مجسمهٔ گچی که در انبار کارگاه پیدا شد؛ نیکو در این مطالعه فقط به لبهٔ نور و لبهٔ سایه پرداخته است.',
-    spot: { x: 3.5, z: -21.0, rotY: -Math.PI / 2, y: 1.6, w: 0.9 },
+    spot: { x: -16.5, z: -21.5, rotY: Math.PI / 2, y: 1.6, w: 0.9 },
   },
   {
     id: 'AR-1401-21',
     img: '/art/art-21.webp',
     aspect: 880 / 1184,
-    hall: 'corridor',
+    hall: 'hall-3',
     artist: 'سحر بینا',
     title: 'برنج و شاخه',
     year: '۱۴۰۱',
@@ -392,7 +372,7 @@ export const ARTWORKS = [
     dims: '۸۰ × ۶۰ سانتی‌متر',
     price: 74000000,
     desc: 'یک ظرف برنجی و شاخه‌ای خشک، در نور تک‌منبعی از سمت چپ. بینا این مجموعه را با نور پنجرهٔ شمالی و بدون فلاش ثبت کرده است.',
-    spot: { x: -3.5, z: -44.2, rotY: Math.PI / 2, y: 1.6, w: 0.95 },
+    spot: { x: -16.5, z: -43, rotY: Math.PI / 2, y: 1.6, w: 0.95 },
   },
 ]
 

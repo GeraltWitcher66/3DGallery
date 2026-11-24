@@ -59,6 +59,7 @@ export default function Joystick() {
     <div
       className="joystick"
       ref={base}
+      aria-hidden="true"
       onPointerDown={start}
       onPointerMove={move}
       onPointerUp={end}

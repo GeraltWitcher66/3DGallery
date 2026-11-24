@@ -17,7 +17,7 @@ export default function Intro({ onEnter, onNavigate, progress, ready }) {
         <p className="intro-latin">ARIANA CONTEMPORARY GALLERY</p>
         <p className="intro-copy">
           شش فضا و بیست‌ویک اثر از هنرمندان معاصر ایران. در سالن‌ها آزادانه قدم بزنید، به آثار نزدیک شوید و
-          جزئیات را با ذره‌بین ببینید.
+          روی هر اثر کلیک کنید تا در نمای بزرگ ببینید.
         </p>
 
         <button className="btn-gold" onClick={onEnter} disabled={!ready}>

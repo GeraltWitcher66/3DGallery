@@ -1,12 +1,31 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { useThree } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
-import { CORRIDOR, DOORS, HALLS, HALL_ORDER, VESTIBULE } from '../data/gallery'
-import { useGalleryTextures, useTiled } from './materials'
+import { HALLS, HALL_ORDER, VESTIBULE } from '../data/gallery'
+import {
+  useGalleryTextures,
+  useTiled,
+  useTiledSet,
+  usePhotoWallMaterial,
+  usePhotorealTextures,
+  useStudioEnv,
+} from './materials'
+import { assetUrl } from '../lib/asset'
+import { useHallUnlocked, useUnlockVersion } from '../lib/hallTextures'
 import Artwork from './Artwork'
 
 const T = 0.26 // wall thickness
+
+// Coarse pointers get cheaper shadow maps; the scene is static so the sun map
+// only has to look good, not update every frame.
+const COARSE_POINTER = typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches
+const SUN_SHADOW_SIZE = COARSE_POINTER ? 1024 : 2048
+const SPOT_SHADOW_SIZE = COARSE_POINTER ? 512 : 1024
+
+// Photoreal test: this one hall uses CC0 photo textures and a real HDR
+// environment; the other halls keep the original materials for comparison.
+const PHOTOREAL_HALL = 'hall-1'
 
 /* ------------------------------------------------------------------ */
 /*  Environment                                                        */
@@ -71,11 +90,12 @@ function WallRun({ axis, fixed, from, to, height, gaps = [], material, y0 = 0 })
 /* ------------------------------------------------------------------ */
 /*  Floors                                                             */
 /* ------------------------------------------------------------------ */
-function Floor({ x0, x1, z0, z1, kind, marble, wood }) {
+function Floor({ x0, x1, z0, z1, kind, marble, wood, photo, envMap }) {
   const w = x1 - x0
   const d = z1 - z0
   const marbleMap = useTiled(marble, w / 3.1, d / 3.1)
   const woodMap = useTiled(wood, w / 1.35, d / 1.35)
+  const photoMap = useTiledSet(photo, w / 1.35, d / 1.35)
   return (
     <mesh
       rotation-x={-Math.PI / 2}
@@ -83,7 +103,16 @@ function Floor({ x0, x1, z0, z1, kind, marble, wood }) {
       receiveShadow
     >
       <planeGeometry args={[w, d]} />
-      {kind === 'marble' ? (
+      {photoMap ? (
+        <meshStandardMaterial
+          map={photoMap.map}
+          normalMap={photoMap.normalMap}
+          normalScale={[0.22, 0.22]}
+          color="#f2ebdf"
+          roughness={1}
+          metalness={0}
+        />
+      ) : kind === 'marble' ? (
         <meshPhysicalMaterial
           map={marbleMap}
           color="#cec6b6"
@@ -264,6 +293,10 @@ function HallSign({ position, rotation, title, subtitle }) {
 /* ------------------------------------------------------------------ */
 const SOFT_SHADOWS = typeof window === 'undefined' || !window.matchMedia('(hover: none)').matches
 
+// A slightly different lamp temperature per hall keeps the rooms from reading
+// as one flat space without touching their geometry.
+const HALL_TONES = ['#ffd8a4', '#ffddb2', '#ffd29c', '#ffe2bd', '#ffcf9f']
+
 function TrackCan({ position, tilt = 0 }) {
   return (
     <group position={position}>
@@ -294,7 +327,7 @@ function TrackRail({ position, length, rotation = 0 }) {
   )
 }
 
-function GallerySpot({ position, target, intensity = 7 }) {
+function GallerySpot({ position, target, intensity = 7, color = '#ffd8a4' }) {
   const light = useRef()
   const obj = useMemo(() => new THREE.Object3D(), [])
   return (
@@ -305,13 +338,13 @@ function GallerySpot({ position, target, intensity = 7 }) {
         position={position}
         target={obj}
         angle={0.38}
-        penumbra={0.72}
+        penumbra={0.95}
         intensity={intensity}
         distance={17}
         decay={2}
-        color="#ffd8a4"
+        color={color}
         castShadow={SOFT_SHADOWS}
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={[SPOT_SHADOW_SIZE, SPOT_SHADOW_SIZE]}
         shadow-bias={-0.0012}
         shadow-normalBias={0.02}
         shadow-radius={4}
@@ -325,44 +358,45 @@ function HallLighting({ hall, artworks }) {
   const arts = artworks.filter((a) => a.hall === hall.id)
   if (!arts.length) return null
 
-  const items = arts.map((a) => {
-    const { x, z, y, rotY } = a.spot
-    const n = [Math.sin(rotY), Math.cos(rotY)]
-    return {
-      key: a.id,
-      px: x + n[0] * 0.95,
-      pz: z + n[1] * 0.95,
-      tx: x + n[0] * 0.1,
-      tz: z + n[1] * 0.1,
-      ty: y,
-    }
-  })
-
-  const railX = items[0].px
-  const zs = items.map((i) => i.pz)
-  const r0 = Math.min(...zs) - 1.8
-  const r1 = Math.max(...zs) + 1.8
-  const tilt = hall.side === 'west' ? -0.5 : 0.5
+  // The photoreal test hall uses a near-neutral lamp so the real textures are
+  // judged on their own colour; the other halls keep their warm tones.
+  const tone =
+    hall.id === PHOTOREAL_HALL ? '#fff3e4' : HALL_TONES[(hall.index - 1) % HALL_TONES.length]
 
   return (
     <group>
-      <TrackRail position={[railX, b.h - 0.05, (r0 + r1) / 2]} length={r1 - r0} />
-      {items.map((it) => (
-        <group key={it.key}>
-          <TrackCan position={[it.px, b.h - 0.08, it.pz]} tilt={tilt} />
-          <GallerySpot
-            position={[it.px, b.h - 0.27, it.pz]}
-            target={[it.tx, it.ty, it.tz]}
-            intensity={70}
-          />
-        </group>
-      ))}
+      {arts.map((art) => {
+        const { x, z, y, rotY } = art.spot
+        const nx = Math.sin(rotY)
+        const nz = Math.cos(rotY)
+        const px = x + nx * 0.95
+        const pz = z + nz * 0.95
+        // A wall whose normal points along z carries its track along x.
+        const acrossX = Math.abs(nz) < 0.5
+        const tilt = acrossX ? 0 : hall.side === 'west' ? -0.5 : 0.5
+        return (
+          <group key={art.id}>
+            <TrackRail
+              position={[px, b.h - 0.05, pz]}
+              length={2.2}
+              rotation={acrossX ? Math.PI / 2 : 0}
+            />
+            <TrackCan position={[px, b.h - 0.08, pz]} tilt={tilt} />
+            <GallerySpot
+              position={[px, b.h - 0.27, pz]}
+              target={[x + nx * 0.1, y, z + nz * 0.1]}
+              intensity={70}
+              color={tone}
+            />
+          </group>
+        )
+      })}
       <pointLight
         position={[(b.x0 + b.x1) / 2, b.h - 1.0, (b.z0 + b.z1) / 2]}
-        intensity={2.4}
+        intensity={hall.id === PHOTOREAL_HALL ? 1.15 : 2.4}
         distance={14}
         decay={2}
-        color="#ffca8f"
+        color={tone}
       />
     </group>
   )
@@ -371,38 +405,30 @@ function HallLighting({ hall, artworks }) {
 /* ------------------------------------------------------------------ */
 /*  Rooms                                                              */
 /* ------------------------------------------------------------------ */
-function RoomShell({ hall, textures, activeHall, artworks }) {
+function RoomShell({ hall, textures, activeHall, artworks, photo, envMap }) {
   const b = hall.bounds
   const door = hall.door
-  const wallMat = useWallMaterial(textures.plaster)
-  const gapList = [
-    { start: door.center - door.width / 2, end: door.center + door.width / 2, top: door.height },
-  ]
+  const photoWall = usePhotoWallMaterial(photo ? photo.plaster : null, envMap)
+  const wallMat = photoWall || useWallMaterial(textures.plaster)
 
   return (
     <group>
-      <Floor x0={b.x0} x1={b.x1} z0={b.z0} z1={b.z1} kind={hall.floor} marble={textures.marble} wood={textures.wood} />
+      <Floor
+        x0={b.x0}
+        x1={b.x1}
+        z0={b.z0}
+        z1={b.z1}
+        kind={hall.floor}
+        marble={textures.marble}
+        wood={textures.wood}
+        photo={photo ? photo.parquet : null}
+        envMap={envMap}
+      />
 
       <WallRun axis="x" fixed={b.z0} from={b.x0 - T / 2} to={b.x1 + T / 2} height={b.h} material={wallMat} />
       <WallRun axis="x" fixed={b.z1} from={b.x0 - T / 2} to={b.x1 + T / 2} height={b.h} material={wallMat} />
-      <WallRun
-        axis="z"
-        fixed={b.x0}
-        from={b.z0}
-        to={b.z1}
-        height={b.h}
-        gaps={door.side === 'west' ? gapList : []}
-        material={wallMat}
-      />
-      <WallRun
-        axis="z"
-        fixed={b.x1}
-        from={b.z0}
-        to={b.z1}
-        height={b.h}
-        gaps={door.side === 'east' ? gapList : []}
-        material={wallMat}
-      />
+      <WallRun axis="z" fixed={b.x0} from={b.z0} to={b.z1} height={b.h} material={wallMat} />
+      <WallRun axis="z" fixed={b.x1} from={b.z0} to={b.z1} height={b.h} material={wallMat} />
 
       {/* ceiling with two recessed light lines */}
       <CeilingPanel x0={b.x0} x1={b.x1} z0={b.z0} z1={b.z1} y={b.h} color="#2a2622" />
@@ -462,9 +488,6 @@ function Lobby({ textures, activeHall }) {
   const lobby = HALLS.lobby
   const b = lobby.bounds
   const wallMat = useWallMaterial(textures.plaster)
-  const northGap = [
-    { start: -3.5, end: 3.5, top: CORRIDOR.h },
-  ]
   const southGap = [
     { start: -lobby.entrance.width / 2, end: lobby.entrance.width / 2, top: lobby.entrance.height },
   ]
@@ -474,7 +497,7 @@ function Lobby({ textures, activeHall }) {
     <group>
       <Floor x0={b.x0} x1={b.x1} z0={b.z0} z1={b.z1} kind="marble" marble={textures.marble} wood={textures.wood} />
 
-      <WallRun axis="x" fixed={b.z0} from={b.x0 - T / 2} to={b.x1 + T / 2} height={b.h} material={wallMat} gaps={northGap} />
+      <WallRun axis="x" fixed={b.z0} from={b.x0 - T / 2} to={b.x1 + T / 2} height={b.h} material={wallMat} />
       <WallRun axis="x" fixed={b.z1} from={b.x0 - T / 2} to={b.x1 + T / 2} height={b.h} material={wallMat} gaps={southGap} />
       <WallRun axis="z" fixed={b.x0} from={b.z0} to={b.z1} height={b.h} material={wallMat} />
       <WallRun axis="z" fixed={b.x1} from={b.z0} to={b.z1} height={b.h} material={wallMat} />
@@ -556,74 +579,43 @@ function Lobby({ textures, activeHall }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Corridor                                                           */
+/*  Artwork streaming                                                  */
 /* ------------------------------------------------------------------ */
-function Corridor({ textures, activeHall }) {
-  const wallMat = useWallMaterial(textures.plaster)
-  const xGaps = (side) =>
-    DOORS.filter((d) => d.side === side).map((d) => ({
-      start: d.center - d.width / 2,
-      end: d.center + d.width / 2,
-      top: d.height,
-    }))
-  return (
-    <group>
-      <Floor x0={CORRIDOR.x0} x1={CORRIDOR.x1} z0={CORRIDOR.z0} z1={CORRIDOR.z1} kind="marble" marble={textures.marble} wood={textures.wood} />
-      <WallRun axis="z" fixed={CORRIDOR.x0} from={CORRIDOR.z0} to={CORRIDOR.z1} height={CORRIDOR.h} gaps={xGaps('west')} material={wallMat} />
-      <WallRun axis="z" fixed={CORRIDOR.x1} from={CORRIDOR.z0} to={CORRIDOR.z1} height={CORRIDOR.h} gaps={xGaps('east')} material={wallMat} />
-      <WallRun axis="x" fixed={CORRIDOR.z0} from={CORRIDOR.x0 - T / 2} to={CORRIDOR.x1 + T / 2} height={CORRIDOR.h} material={wallMat} />
-      <CeilingPanel x0={CORRIDOR.x0} x1={CORRIDOR.x1} z0={CORRIDOR.z0} z1={CORRIDOR.z1} y={CORRIDOR.h} color="#2b2723" />
-      <LightStrip position={[0, CORRIDOR.h - 0.005, (CORRIDOR.z0 + CORRIDOR.z1) / 2]} size={[0.12, 44]} intensity={1.2} />
-      <pointLight position={[0, 3.9, -8]} intensity={2.6} distance={12} decay={2} color="#ffca8f" />
-      <pointLight position={[0, 3.9, -28]} intensity={2.6} distance={12} decay={2} color="#ffca8f" />
-      <Console position={[0, 0, CORRIDOR.z0 + 1.1]} />
-      {[
-        { x: -3.5, z: -17.0, rotY: Math.PI / 2 },
-        { x: 3.5, z: -21.0, rotY: -Math.PI / 2 },
-        { x: -3.5, z: -44.2, rotY: Math.PI / 2 },
-      ].map((a, i) => {
-        const n = [Math.sin(a.rotY), Math.cos(a.rotY)]
-        const px = a.x + n[0] * 0.95
-        return (
-          <group key={i}>
-            <TrackRail position={[px, CORRIDOR.h - 0.05, a.z]} length={2.2} />
-            <TrackCan position={[px, CORRIDOR.h - 0.08, a.z]} tilt={a.rotY > 0 ? -0.5 : 0.5} />
-            <GallerySpot
-              position={[px, CORRIDOR.h - 0.27, a.z]}
-              target={[a.x + n[0] * 0.1, 1.6, a.z]}
-              intensity={34}
-            />
-          </group>
-        )
-      })}
-      <LobbyWallText />
-    </group>
-  )
+// Paintings are downloaded per hall: the hall the visitor is in (or is about to
+// enter) is unlocked by the route, and hovering a hall button warms the rest.
+const HALL_GROUPS = HALL_ORDER
+
+// Shadow maps are frozen after start-up; this re-arms them for a moment when a
+// hall's paintings mount or the visitor changes halls, then they stay cached.
+function StaticShadows({ trigger }) {
+  const { gl } = useThree()
+  const frames = useRef(0)
+
+  useEffect(() => {
+    frames.current = 90
+  }, [trigger])
+
+  useFrame(() => {
+    if (frames.current <= 0) return
+    frames.current -= 1
+    gl.shadowMap.needsUpdate = true
+  })
+
+  return null
 }
 
-function LobbyWallText() {
-  const tex = useMemo(() => {
-    const c = document.createElement('canvas')
-    c.width = 1024
-    c.height = 256
-    const ctx = c.getContext('2d')
-    ctx.direction = 'rtl'
-    ctx.textAlign = 'center'
-    ctx.fillStyle = '#e8dcc6'
-    ctx.font = '300 86px "Vazirmatn Variable", Tahoma, sans-serif'
-    ctx.fillText('سالن‌های نمایشگاهی', 512, 110)
-    ctx.font = '400 40px "Cormorant Garamond", Georgia, serif'
-    ctx.fillStyle = '#a2957f'
-    ctx.fillText('GALLERY HALLS  ·  I — V', 512, 180)
-    const t = new THREE.CanvasTexture(c)
-    t.colorSpace = THREE.SRGBColorSpace
-    return t
-  }, [])
+function HallArtworks({ hallId, artworks, onOpen }) {
+  const unlocked = useHallUnlocked(hallId)
+  if (!unlocked) return null
+
   return (
-    <mesh position={[0, 3.55, CORRIDOR.z0 + 0.15]} rotation-y={0}>
-      <planeGeometry args={[2.2, 0.55]} />
-      <meshBasicMaterial map={tex} transparent toneMapped={false} />
-    </mesh>
+    <group>
+      {artworks
+        .filter((art) => art.hall === hallId)
+        .map((art) => (
+          <Artwork key={art.id} art={art} onOpen={() => onOpen(art)} />
+        ))}
+    </group>
   )
 }
 
@@ -632,20 +624,26 @@ function LobbyWallText() {
 /* ------------------------------------------------------------------ */
 export default function Gallery({ activeHall, artworks, onOpenArtwork }) {
   const textures = useGalleryTextures()
+  // The photoreal set is fetched only while the visitor is inside the test hall.
+  const inPhotoHall = activeHall === PHOTOREAL_HALL
+  const photo = usePhotorealTextures(inPhotoHall)
+  const envMap = useStudioEnv(assetUrl('/tex/env_studio.webp'), inPhotoHall)
+  const unlockVersion = useUnlockVersion()
 
   return (
     <group>
       <StudioEnvironment />
+      <StaticShadows trigger={`${activeHall}:${unlockVersion}`} />
 
-      <ambientLight intensity={0.055} color="#ffeacd" />
-      <hemisphereLight args={['#8a7b63', '#100d0a', 0.15]} />
+      <ambientLight intensity={0.07} color="#ffeacd" />
+      <hemisphereLight args={['#8a7b63', '#100d0a', 0.18]} />
 
       <directionalLight
         position={[-16, 30, 22]}
         intensity={0.28}
         color="#fff2dd"
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[SUN_SHADOW_SIZE, SUN_SHADOW_SIZE]}
         shadow-bias={-0.0005}
         shadow-normalBias={0.03}
         shadow-camera-left={-34}
@@ -657,13 +655,22 @@ export default function Gallery({ activeHall, artworks, onOpenArtwork }) {
       />
 
       <Lobby textures={textures} activeHall={activeHall} />
-      <Corridor textures={textures} activeHall={activeHall} />
       {HALL_ORDER.filter((id) => id !== 'lobby').map((id) => (
-        <RoomShell key={id} hall={HALLS[id]} textures={textures} activeHall={activeHall} artworks={artworks} />
+        <RoomShell
+          key={id}
+          hall={HALLS[id]}
+          textures={textures}
+          activeHall={activeHall}
+          artworks={artworks}
+          photo={id === PHOTOREAL_HALL ? photo : null}
+          envMap={id === PHOTOREAL_HALL ? envMap : null}
+        />
       ))}
 
-      {artworks.map((art) => (
-        <Artwork key={art.id} art={art} onOpen={() => onOpenArtwork(art)} />
+      {HALL_GROUPS.map((id) => (
+        <Suspense key={id} fallback={null}>
+          <HallArtworks hallId={id} artworks={artworks} onOpen={onOpenArtwork} />
+        </Suspense>
       ))}
     </group>
   )

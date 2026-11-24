@@ -6,6 +6,8 @@ import '@fontsource/cormorant-garamond/latin-300-italic.css'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
+import ErrorBoundary from './ui/ErrorBoundary.jsx'
+import Fatal from './ui/Fatal.jsx'
 import './styles.css'
 
 // GitHub Pages has no SPA fallback: 404.html sends deep links here after a
@@ -31,6 +33,31 @@ const fontsSettled = Promise.allSettled(
   fontLoads.map((font) => (document.fonts ? document.fonts.load(font) : Promise.resolve()))
 )
 
+// A missing WebGL context throws deep inside three; check first so the visitor
+// gets an explanation instead of a blank page.
+function hasWebGL() {
+  try {
+    const canvas = document.createElement('canvas')
+    return !!(canvas.getContext('webgl2') || canvas.getContext('webgl'))
+  } catch {
+    return false
+  }
+}
+
 fontsSettled.then(() => {
-  createRoot(document.getElementById('root')).render(<App />)
+  const root = createRoot(document.getElementById('root'))
+  if (!hasWebGL()) {
+    root.render(
+      <Fatal
+        title="مرورگر شما از سه‌بعدی پشتیبانی نمی‌کند"
+        detail="برای دیدن گالری، مرورگری با WebGL (نسخهٔ جدید کروم، فایرفاکس یا سافاری) و شتاب گرافیکی روشن را باز کنید."
+      />
+    )
+    return
+  }
+  root.render(
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  )
 })

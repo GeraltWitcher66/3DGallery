@@ -13,30 +13,51 @@ const PATH_TO_HALL = {
   '/hall-5': 'hall-5',
 }
 
-export function hallFromPath(pathname) {
-  const local = (pathname || '/').replace(BASE_RE, '')
-  const clean = local.replace(/\/+$/, '') || '/'
-  return PATH_TO_HALL[clean] || 'lobby'
+/** `/hall-1/AR-1402-04` → { hall: 'hall-1', art: 'AR-1402-04' } */
+export function routeFromPath(pathname) {
+  const local = (pathname || '/').replace(BASE_RE, '').replace(/\/+$/, '') || '/'
+  const [head, ...rest] = local.split('/').filter(Boolean)
+  if (!head) return { hall: 'lobby', art: null }
+  const hall = PATH_TO_HALL[`/${head}`]
+  if (!hall) return { hall: 'lobby', art: null }
+  return { hall, art: rest[0] || null }
 }
 
 export function pathForHall(hallId) {
   return `${BASE}${hallId === 'lobby' ? '/' : `/${hallId}`}`
 }
 
-export function useHallRoute() {
-  const [hall, setHall] = useState(() => hallFromPath(window.location.pathname))
+export function pathForArtwork(hallId, artId) {
+  return `${BASE}/${hallId}/${artId}`
+}
+
+export function useRoute() {
+  const [route, setRoute] = useState(() => routeFromPath(window.location.pathname))
 
   useEffect(() => {
-    const onPop = () => setHall(hallFromPath(window.location.pathname))
+    const onPop = () => setRoute(routeFromPath(window.location.pathname))
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
-  const navigate = (hallId) => {
-    const path = pathForHall(hallId)
+  const push = (path) => {
     if (window.location.pathname !== path) window.history.pushState({}, '', path)
-    setHall(hallId)
   }
 
-  return [hall, navigate]
+  const goHall = (hallId) => {
+    push(pathForHall(hallId))
+    setRoute({ hall: hallId, art: null })
+  }
+
+  const goArtwork = (art) => {
+    push(pathForArtwork(art.hall, art.id))
+    setRoute({ hall: art.hall, art: art.id })
+  }
+
+  const closeArtwork = () => {
+    push(pathForHall(route.hall))
+    setRoute({ hall: route.hall, art: null })
+  }
+
+  return [route, { goHall, goArtwork, closeArtwork }]
 }

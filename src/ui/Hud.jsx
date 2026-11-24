@@ -1,6 +1,7 @@
 import { HALL_LIST } from '../data/gallery'
+import { preloadHall } from '../lib/preload'
 
-export default function Hud({ hall, onNavigate, isTouch, locked, showHint, onHelp, onHome }) {
+export default function Hud({ hall, onNavigate, isTouch, locked, showHint, onHelp, onIndex, onHome }) {
   return (
     <div className="hud">
       <header className="hud-top">
@@ -17,7 +18,10 @@ export default function Hud({ hall, onNavigate, isTouch, locked, showHint, onHel
             <button
               key={h.id}
               className={`nav-pill${hall.id === h.id ? ' is-active' : ''}`}
+              aria-current={hall.id === h.id ? 'page' : undefined}
               onClick={() => onNavigate(h.id)}
+              onPointerEnter={() => preloadHall(h.id)}
+              onFocus={() => preloadHall(h.id)}
             >
               {h.id === 'lobby' ? 'لابی' : h.name}
             </button>
@@ -25,6 +29,9 @@ export default function Hud({ hall, onNavigate, isTouch, locked, showHint, onHel
         </nav>
 
         <div className="hud-actions">
+          <button className="ghost-btn" onClick={onIndex}>
+            فهرست آثار
+          </button>
           <button className="ghost-btn" onClick={onHelp}>
             راهنما
           </button>
@@ -57,6 +64,7 @@ export default function Hud({ hall, onNavigate, isTouch, locked, showHint, onHel
           <button
             key={h.id}
             className={`nav-pill${hall.id === h.id ? ' is-active' : ''}`}
+            aria-current={hall.id === h.id ? 'page' : undefined}
             onClick={() => onNavigate(h.id)}
           >
             {h.id === 'lobby' ? 'لابی' : h.name}

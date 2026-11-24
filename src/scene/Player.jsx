@@ -5,6 +5,10 @@ import { HALLS, WALKABLE } from '../data/gallery'
 import { input } from '../lib/input'
 
 const EYE = 1.66
+// Camera bob is decoration, never information: skip it when the visitor asked
+// the system for reduced motion.
+const REDUCE_MOTION =
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
 
 function canStand(x, z) {
@@ -189,7 +193,8 @@ export default function Player({ hallId, enabled, onLockChange }) {
 
     const moving = Math.hypot(vel.current.x, vel.current.z)
     bob.current += step * moving * 3.6
-    camera.position.y = EYE + Math.sin(bob.current * 2.2) * 0.011 * Math.min(1, moving)
+    camera.position.y =
+      EYE + (REDUCE_MOTION ? 0 : Math.sin(bob.current * 2.2) * 0.011 * Math.min(1, moving))
 
     camera.rotation.x = pitch.current
     camera.rotation.y = yaw.current

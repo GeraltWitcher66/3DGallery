@@ -2,16 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import { HALLS } from '../data/gallery'
 import { formatPrice } from '../lib/format'
 import { assetUrl } from '../lib/asset'
+import { useModal } from '../lib/useModal'
 
 const MIN = 1
 const MAX = 6
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
 
-export default function Lightbox({ art, onClose }) {
+export default function Lightbox({ art, onClose, prevArt, nextArt, onPrev, onNext }) {
   const [scale, setScale] = useState(1)
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const [smooth, setSmooth] = useState(true)
   const stageRef = useRef(null)
+  const closeRef = useRef(null)
+  const dialogRef = useModal(onClose, closeRef)
   const pointers = useRef(new Map())
   const drag = useRef(null)
   const pinch = useRef(null)
@@ -24,19 +27,28 @@ export default function Lightbox({ art, onClose }) {
     setSmooth(true)
   }, [art.id])
 
+  // Warm the neighbouring works so stepping through a hall feels immediate.
+  useEffect(() => {
+    ;[prevArt, nextArt].filter(Boolean).forEach((item) => {
+      const img = new Image()
+      img.src = assetUrl(item.img)
+    })
+  }, [art.id, prevArt, nextArt])
+
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose()
       if (e.key === '+' || e.key === '=') setScale((s) => clamp(s * 1.3, MIN, MAX))
       if (e.key === '-') setScale((s) => clamp(s / 1.3, MIN, MAX))
       if (e.key === '0') {
         setScale(1)
         setPos({ x: 0, y: 0 })
       }
+      if (e.key === 'ArrowLeft' && onNext) onNext()
+      if (e.key === 'ArrowRight' && onPrev) onPrev()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onPrev, onNext])
 
   useEffect(() => {
     const el = stageRef.current
@@ -120,7 +132,13 @@ export default function Lightbox({ art, onClose }) {
   }
 
   return (
-    <div className="lightbox" role="dialog" aria-modal="true" aria-label={`${art.title}، ${art.artist}`}>
+    <div
+      className="lightbox"
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${art.title}، ${art.artist}`}
+    >
       <div className="lb-backdrop" onClick={onClose} />
       <div className="lb-panel">
         <div
@@ -146,10 +164,42 @@ export default function Lightbox({ art, onClose }) {
           <div className="lb-stage-caption">
             {scale > 1.05 ? 'برای جابه‌جایی بکشید' : 'برای بزرگ‌نمایی اسکرول کنید یا دوبار ضربه بزنید'}
           </div>
+
+          {onPrev && (
+            <button
+              className="lb-nav lb-prev"
+              onClick={onPrev}
+              onPointerDown={(e) => e.stopPropagation()}
+              aria-label="اثر قبلی"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+          {onNext && (
+            <button
+              className="lb-nav lb-next"
+              onClick={onNext}
+              onPointerDown={(e) => e.stopPropagation()}
+              aria-label="اثر بعدی"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M15 5l-7 7 7 7" />
+              </svg>
+            </button>
+          )}
+
           <div className="zoom-controls" onPointerDown={(e) => e.stopPropagation()}>
-            <button onClick={() => zoom(1.3)} aria-label="بزرگ‌نمایی">+</button>
-            <button onClick={() => zoom(1 / 1.3)} aria-label="کوچک‌نمایی">−</button>
-            <button onClick={reset} aria-label="بازنشانی" className="reset">↺</button>
+            <button onClick={() => zoom(1.3)} aria-label="بزرگ‌نمایی">
+              +
+            </button>
+            <button onClick={() => zoom(1 / 1.3)} aria-label="کوچک‌نمایی">
+              −
+            </button>
+            <button onClick={reset} aria-label="بازنشانی" className="reset">
+              ↺
+            </button>
           </div>
         </div>
 
@@ -191,11 +241,15 @@ export default function Lightbox({ art, onClose }) {
             <p>{art.desc}</p>
           </div>
 
+          {(onPrev || onNext) && (
+            <p className="lb-step-hint">کلیدهای ← → برای اثر بعدی و قبلی</p>
+          )}
+
           <p className="lb-note">گالری آریانا · تهران، خیابان فرشته</p>
         </aside>
       </div>
 
-      <button className="lb-close" onClick={onClose} aria-label="بستن">
+      <button className="lb-close" onClick={onClose} aria-label="بستن" ref={closeRef}>
         <span>×</span>
       </button>
     </div>
