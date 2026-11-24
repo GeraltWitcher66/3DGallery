@@ -29,23 +29,19 @@ export function useGalleryTextures() {
 /* ------------------------------------------------------------------ */
 /*  Photoreal test set (CC0 assets from Poly Haven)                    */
 /* ------------------------------------------------------------------ */
-// Three maps per surface: albedo, roughness and normal. They are fetched only
-// once the visitor actually stands in the test hall, so the first paint of the
-// lobby never pays for them.
+// Albedo, roughness and normal for the plaster wall. The three WebPs are small
+// enough to ship with the scene, since every room is dressed with them.
 const PHOTOREAL_FILES = [
-  '/tex/parquet_diff.webp',
-  '/tex/parquet_rough.webp',
-  '/tex/parquet_nor.webp',
   '/tex/plaster_diff.webp',
   '/tex/plaster_rough.webp',
   '/tex/plaster_nor.webp',
 ]
 
-export function usePhotorealTextures(enabled) {
+export function usePhotorealTextures() {
   const [set, setSet] = useState(null)
 
   useEffect(() => {
-    if (!enabled || set) return
+    if (set) return
     let alive = true
     const loader = new THREE.TextureLoader()
     Promise.all(PHOTOREAL_FILES.map((f) => loader.loadAsync(assetUrl(f))))
@@ -55,7 +51,7 @@ export function usePhotorealTextures(enabled) {
           m.wrapS = m.wrapT = THREE.RepeatWrapping
           m.anisotropy = 8
         }
-        setSet({ parquet: maps.slice(0, 3), plaster: maps.slice(3, 6) })
+        setSet({ plaster: maps })
       })
       .catch(() => {
         // a failed fetch just leaves the hall on its original materials
@@ -63,7 +59,7 @@ export function usePhotorealTextures(enabled) {
     return () => {
       alive = false
     }
-  }, [enabled, set])
+  }, [set])
 
   return set
 }
@@ -76,18 +72,6 @@ function tileMap(texture, rx, ry, srgb) {
   t.anisotropy = 8
   t.needsUpdate = true
   return t
-}
-
-/** Clone an albedo/roughness/normal set and give it its own tiling. */
-export function useTiledSet(set, rx, ry) {
-  return useMemo(() => {
-    if (!set) return null
-    return {
-      map: tileMap(set[0], rx, ry, true),
-      roughnessMap: tileMap(set[1], rx, ry, false),
-      normalMap: tileMap(set[2], rx, ry, false),
-    }
-  }, [set, rx, ry])
 }
 
 /** A wall material built from the real plaster photos. */
@@ -113,8 +97,8 @@ export function usePhotoWallMaterial(set, envMap) {
 }
 
 /**
- * PMREM-filtered studio panorama, fetched only while the test hall is open.
- * It ships as a small WebP equirect instead of a multi-megabyte HDR.
+ * PMREM-filtered studio panorama used by the wall material. It ships as a
+ * small WebP equirect instead of a multi-megabyte HDR.
  */
 export function useStudioEnv(url, enabled = true) {
   const gl = useThree((state) => state.gl)

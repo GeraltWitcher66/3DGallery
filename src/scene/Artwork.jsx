@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
 import { useTexture } from '@react-three/drei'
-import { input } from '../lib/input'
+import { artworkHover, input } from '../lib/input'
 import { assetUrl } from '../lib/asset'
 
 // Soft dark halo behind the frame: a cheap stand-in for the ambient occlusion a
@@ -115,14 +115,14 @@ export default function Artwork({ art, onOpen }) {
         castShadow={false}
         onPointerOver={(e) => {
           e.stopPropagation()
-          input.hoveringArtwork = true
+          artworkHover.set(true)
           setHover(true)
         }}
         onPointerMove={(e) => {
           e.stopPropagation()
         }}
         onPointerOut={() => {
-          input.hoveringArtwork = false
+          artworkHover.set(false)
           setHover(false)
         }}
         onClick={(e) => {

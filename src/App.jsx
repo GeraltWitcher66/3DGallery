@@ -17,6 +17,7 @@ import Help from './ui/Help'
 import ArtworkIndex from './ui/ArtworkIndex'
 import Joystick from './ui/Joystick'
 import OrientationHint from './ui/OrientationHint'
+import ArtworkCursor from './ui/ArtworkCursor'
 import LoadingOverlay from './ui/LoadingOverlay'
 import Fatal from './ui/Fatal'
 
@@ -183,6 +184,8 @@ export default function App() {
       )}
 
       {touch && !busy && <Joystick />}
+
+      {!touch && !busy && <ArtworkCursor />}
 
       <OrientationHint active={touch && !introOpen} />
 

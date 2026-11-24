@@ -13,7 +13,7 @@ const west = (n, z0, z1, doorZ, name, en, tagline) => ({
   en,
   tagline,
   bounds: { x0: -16.5, x1: -3.5, z0, z1, h: 5.4 },
-  floor: 'wood',
+  floor: 'marble',
   side: 'west',
   door: { side: 'east', center: doorZ, width: 2.6, height: 3.1 },
   spawn: { x: -5.1, z: doorZ, yaw: Math.PI / 2 },
@@ -27,7 +27,7 @@ const east = (n, z0, z1, doorZ, name, en, tagline) => ({
   en,
   tagline,
   bounds: { x0: 3.5, x1: 16.5, z0, z1, h: 5.4 },
-  floor: 'wood',
+  floor: 'marble',
   side: 'east',
   door: { side: 'west', center: doorZ, width: 2.6, height: 3.1 },
   spawn: { x: 5.1, z: doorZ, yaw: -Math.PI / 2 },
@@ -65,10 +65,32 @@ export const HALL_LIST = HALL_ORDER.map((id) => HALLS[id])
 // corridor.
 const inset = (b, m) => ({ x0: b.x0 + m, x1: b.x1 - m, z0: b.z0 + m, z1: b.z1 - m })
 
+// Every hall opens onto a shallow entrance bay behind its spawn point, the way
+// the lobby opens onto its vestibule. Each bay overlaps the room rectangle so
+// the visitor can step through the doorway.
+export const ENTRY_DEPTH = 2.4
+
+function entryBays() {
+  return HALL_ORDER.filter((id) => id !== 'lobby').map((id) => {
+    const hall = HALLS[id]
+    const b = hall.bounds
+    const west = hall.side === 'west'
+    const wallX = west ? b.x1 : b.x0
+    const back = wallX + (west ? ENTRY_DEPTH : -ENTRY_DEPTH)
+    return {
+      x0: west ? wallX - 0.8 : back + 0.35,
+      x1: west ? back - 0.35 : wallX + 0.8,
+      z0: hall.door.center - hall.door.width / 2 + 0.45,
+      z1: hall.door.center + hall.door.width / 2 - 0.45,
+    }
+  })
+}
+
 export const WALKABLE = [
   { x0: -8.5, x1: 8.5, z0: 0.35, z1: 15.8 },
   { x0: VESTIBULE.x0 + 0.7, x1: VESTIBULE.x1 - 0.7, z0: 15.2, z1: 18.3 },
   ...HALL_ORDER.filter((id) => id !== 'lobby').map((id) => inset(HALLS[id].bounds, 0.5)),
+  ...entryBays(),
 ]
 
 // ---------------------------------------------------------------------------

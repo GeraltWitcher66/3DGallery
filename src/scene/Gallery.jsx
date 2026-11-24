@@ -2,11 +2,10 @@ import { Suspense, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
-import { HALLS, HALL_ORDER, VESTIBULE } from '../data/gallery'
+import { ENTRY_DEPTH, HALLS, HALL_ORDER, VESTIBULE } from '../data/gallery'
 import {
   useGalleryTextures,
   useTiled,
-  useTiledSet,
   usePhotoWallMaterial,
   usePhotorealTextures,
   useStudioEnv,
@@ -23,8 +22,8 @@ const COARSE_POINTER = typeof window !== 'undefined' && window.matchMedia('(hove
 const SUN_SHADOW_SIZE = COARSE_POINTER ? 1024 : 2048
 const SPOT_SHADOW_SIZE = COARSE_POINTER ? 512 : 1024
 
-// Photoreal test: this one hall uses CC0 photo textures and a real HDR
-// environment; the other halls keep the original materials for comparison.
+// Every room is dressed with the CC0 plaster photos; this hall also keeps the
+// neutral test lighting it was tuned against.
 const PHOTOREAL_HALL = 'hall-1'
 
 /* ------------------------------------------------------------------ */
@@ -90,12 +89,11 @@ function WallRun({ axis, fixed, from, to, height, gaps = [], material, y0 = 0 })
 /* ------------------------------------------------------------------ */
 /*  Floors                                                             */
 /* ------------------------------------------------------------------ */
-function Floor({ x0, x1, z0, z1, kind, marble, wood, photo, envMap }) {
+function Floor({ x0, x1, z0, z1, kind, marble, wood }) {
   const w = x1 - x0
   const d = z1 - z0
   const marbleMap = useTiled(marble, w / 3.1, d / 3.1)
   const woodMap = useTiled(wood, w / 1.35, d / 1.35)
-  const photoMap = useTiledSet(photo, w / 1.35, d / 1.35)
   return (
     <mesh
       rotation-x={-Math.PI / 2}
@@ -103,16 +101,7 @@ function Floor({ x0, x1, z0, z1, kind, marble, wood, photo, envMap }) {
       receiveShadow
     >
       <planeGeometry args={[w, d]} />
-      {photoMap ? (
-        <meshStandardMaterial
-          map={photoMap.map}
-          normalMap={photoMap.normalMap}
-          normalScale={[0.22, 0.22]}
-          color="#f2ebdf"
-          roughness={1}
-          metalness={0}
-        />
-      ) : kind === 'marble' ? (
+      {kind === 'marble' ? (
         <meshPhysicalMaterial
           map={marbleMap}
           color="#cec6b6"
@@ -156,17 +145,55 @@ function CeilingPanel({ x0, x1, z0, z1, y, color = '#2b2723' }) {
   )
 }
 
-function LightStrip({ position, size, intensity = 2.2, color = '#fff3e0' }) {
+// Glazed roof: a bright pane raised above the ceiling opening, held by a grid
+// of metal mullions. The lobby and every hall share it.
+function Skylight({ x0, x1, z0, z1, y, glow = 0.45, cols = 3, rows = 3 }) {
+  const w = x1 - x0
+  const d = z1 - z0
+  const cx = (x0 + x1) / 2
+  const cz = (z0 + z1) / 2
+  const lift = 0.34
+  const barY = y + lift * 0.42
+  const barsX = Array.from({ length: cols - 1 }, (_, i) => x0 + (w * (i + 1)) / cols)
+  const barsZ = Array.from({ length: rows - 1 }, (_, i) => z0 + (d * (i + 1)) / rows)
+  const metal = { color: '#33302b', roughness: 0.6, metalness: 0.55 }
+
   return (
-    <mesh position={position} rotation-x={Math.PI / 2}>
-      <planeGeometry args={size} />
-      <meshStandardMaterial
-        color="#1b1916"
-        emissive={color}
-        emissiveIntensity={intensity}
-        roughness={1}
-      />
-    </mesh>
+    <group>
+      <mesh rotation-x={Math.PI / 2} position={[cx, y + lift, cz]}>
+        <planeGeometry args={[w, d]} />
+        <meshStandardMaterial
+          color="#f3e6cc"
+          emissive="#ffe1b4"
+          emissiveIntensity={glow}
+          roughness={1}
+        />
+      </mesh>
+      {barsX.map((x, i) => (
+        <mesh key={`x${i}`} position={[x, barY, cz]}>
+          <boxGeometry args={[0.07, lift * 0.8, d]} />
+          <meshStandardMaterial {...metal} />
+        </mesh>
+      ))}
+      {barsZ.map((z, i) => (
+        <mesh key={`z${i}`} position={[cx, barY, z]}>
+          <boxGeometry args={[w, lift * 0.72, 0.06]} />
+          <meshStandardMaterial {...metal} />
+        </mesh>
+      ))}
+      {/* curb closing the reveal between the ceiling opening and the glass */}
+      {[
+        { pos: [cx, y + lift / 2, z0], size: [w + 0.1, lift, 0.07] },
+        { pos: [cx, y + lift / 2, z1], size: [w + 0.1, lift, 0.07] },
+        { pos: [x0, y + lift / 2, cz], size: [0.07, lift, d + 0.1] },
+        { pos: [x1, y + lift / 2, cz], size: [0.07, lift, d + 0.1] },
+      ].map((c, i) => (
+        <mesh key={`c${i}`} position={c.pos}>
+          <boxGeometry args={c.size} />
+          <meshStandardMaterial {...metal} />
+        </mesh>
+      ))}
+    </group>
   )
 }
 
@@ -250,28 +277,74 @@ function Console({ position, rotation = 0 }) {
 /* ------------------------------------------------------------------ */
 /*  Signage                                                            */
 /* ------------------------------------------------------------------ */
+const SIGN_W = 2.2
+const SIGN_H = 0.69
+const SIGN_BAR = 0.016
+const SIGN_DEPTH = 0.026
+
+// The plaque is a printed face inside a brass frame, so the letters sit on
+// metal instead of hovering over the plaster. Everything is painted once into
+// a 2.2 x 0.69 m canvas texture.
 function makeSignTexture(title, subtitle) {
+  const W = 1280
+  const H = 400
   const c = document.createElement('canvas')
-  c.width = 1024
-  c.height = 320
+  c.width = W
+  c.height = H
   const ctx = c.getContext('2d')
-  ctx.clearRect(0, 0, c.width, c.height)
+  ctx.clearRect(0, 0, W, H)
+
+  // faint sheen, darker at the bottom like a lit metal face
+  const sheen = ctx.createLinearGradient(0, 0, 0, H)
+  sheen.addColorStop(0, 'rgba(255,242,220,0.10)')
+  sheen.addColorStop(0.45, 'rgba(255,240,214,0.02)')
+  sheen.addColorStop(1, 'rgba(0,0,0,0.12)')
+  ctx.fillStyle = sheen
+  ctx.fillRect(0, 0, W, H)
+
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
   ctx.direction = 'rtl'
-  ctx.textAlign = 'right'
-  ctx.fillStyle = '#e8dcc6'
-      ctx.font = '300 108px "Vazirmatn Variable", Tahoma, sans-serif'
-  ctx.fillText(title, 1000, 130)
-  ctx.fillStyle = '#a2957f'
-  ctx.font = '400 44px "Cormorant Garamond", Georgia, serif'
+  try {
+    ctx.letterSpacing = '4px'
+  } catch {
+    // letter-spacing is a newer canvas feature; the sign still reads without it
+  }
+
+  const ink = ctx.createLinearGradient(0, 90, 0, 190)
+  ink.addColorStop(0, '#f8efdd')
+  ink.addColorStop(0.55, '#e8d7b6')
+  ink.addColorStop(1, '#c9b088')
+  ctx.fillStyle = ink
+  ctx.font = '300 104px "Vazirmatn Variable", Tahoma, sans-serif'
+  ctx.fillText(title, W / 2, 168, W - 220)
+
+  // hairline drawn out from a small centre diamond
+  ctx.strokeStyle = 'rgba(220,196,154,0.75)'
+  ctx.lineWidth = 3
+  for (const dir of [-1, 1]) {
+    ctx.beginPath()
+    ctx.moveTo(W / 2 + dir * 44, 240)
+    ctx.lineTo(W / 2 + dir * 214, 240)
+    ctx.stroke()
+  }
+  ctx.save()
+  ctx.translate(W / 2, 240)
+  ctx.rotate(Math.PI / 4)
+  ctx.fillStyle = 'rgba(232,212,174,0.95)'
+  ctx.fillRect(-8, -8, 16, 16)
+  ctx.restore()
+
   ctx.direction = 'ltr'
-  ctx.textAlign = 'right'
-  ctx.fillText(subtitle, 1000, 210)
-  ctx.strokeStyle = 'rgba(210,190,160,0.45)'
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.moveTo(700, 250)
-  ctx.lineTo(1000, 250)
-  ctx.stroke()
+  try {
+    ctx.letterSpacing = '9px'
+  } catch {
+    // spacing is a nicety here
+  }
+  ctx.fillStyle = '#c6b291'
+  ctx.font = '500 34px "Cormorant Garamond", Georgia, serif'
+  ctx.fillText(subtitle.toUpperCase(), W / 2, 294, W - 260)
+
   const tex = new THREE.CanvasTexture(c)
   tex.colorSpace = THREE.SRGBColorSpace
   tex.anisotropy = 8
@@ -280,11 +353,35 @@ function makeSignTexture(title, subtitle) {
 
 function HallSign({ position, rotation, title, subtitle }) {
   const tex = useMemo(() => makeSignTexture(title, subtitle), [title, subtitle])
+  const halfW = SIGN_W / 2
+  const halfH = SIGN_H / 2
+  const brass = [
+    { p: [0, halfH + SIGN_BAR / 2, 0], s: [SIGN_W + SIGN_BAR * 2, SIGN_BAR, 0.02] },
+    { p: [0, -halfH - SIGN_BAR / 2, 0], s: [SIGN_W + SIGN_BAR * 2, SIGN_BAR, 0.02] },
+    { p: [-halfW - SIGN_BAR / 2, 0, 0], s: [SIGN_BAR, SIGN_H, 0.02] },
+    { p: [halfW + SIGN_BAR / 2, 0, 0], s: [SIGN_BAR, SIGN_H, 0.02] },
+  ]
+
   return (
-    <mesh position={position} rotation-y={rotation}>
-      <planeGeometry args={[2.2, 0.69]} />
-      <meshBasicMaterial map={tex} transparent toneMapped={false} />
-    </mesh>
+    <group position={position} rotation-y={rotation}>
+      {/* brushed bronze plate, 26 mm proud of the wall */}
+      <mesh position={[0, 0, -SIGN_DEPTH / 2]} castShadow receiveShadow>
+        <boxGeometry args={[SIGN_W + SIGN_BAR * 2, SIGN_H + SIGN_BAR * 2, SIGN_DEPTH]} />
+        <meshStandardMaterial color="#241d16" metalness={0.6} roughness={0.42} envMapIntensity={0.75} />
+      </mesh>
+
+      <mesh position={[0, 0, 0.001]}>
+        <planeGeometry args={[SIGN_W, SIGN_H]} />
+        <meshBasicMaterial map={tex} transparent toneMapped={false} />
+      </mesh>
+
+      {brass.map((bar, i) => (
+        <mesh key={i} position={bar.p} castShadow>
+          <boxGeometry args={bar.s} />
+          <meshStandardMaterial color="#c9a86a" metalness={0.9} roughness={0.28} envMapIntensity={1} />
+        </mesh>
+      ))}
+    </group>
   )
 }
 
@@ -405,36 +502,184 @@ function HallLighting({ hall, artworks }) {
 /* ------------------------------------------------------------------ */
 /*  Rooms                                                              */
 /* ------------------------------------------------------------------ */
-function RoomShell({ hall, textures, activeHall, artworks, photo, envMap }) {
+// The shallow vestibule behind the spawn point. It mirrors the lobby entrance:
+// a lit recess with cream side walls, a glowing end panel and a brass casing,
+// so the doorway the visitor arrived through is behind them in every hall.
+function EntryBay({ hall }) {
   const b = hall.bounds
   const door = hall.door
-  const photoWall = usePhotoWallMaterial(photo ? photo.plaster : null, envMap)
-  const wallMat = photoWall || useWallMaterial(textures.plaster)
+  const west = hall.side === 'west'
+  const wallX = west ? b.x1 : b.x0
+  const dir = west ? 1 : -1
+  const back = wallX + dir * ENTRY_DEPTH
+  const zc = door.center
+  const halfW = door.width / 2
+  const h = door.height
+  const cx = (wallX + back) / 2
 
   return (
     <group>
+      {[-1, 1].map((s) => (
+        <mesh
+          key={s}
+          position={[cx, h / 2, zc + s * (halfW + 0.09)]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[ENTRY_DEPTH, h, 0.18]} />
+          <meshStandardMaterial color="#d6cbb8" roughness={0.92} />
+        </mesh>
+      ))}
+
+      {/* the end of the vestibule: a pair of tall doors back out of the gallery */}
+      <mesh position={[back, h / 2, zc]} rotation-y={west ? -Math.PI / 2 : Math.PI / 2}>
+        <planeGeometry args={[halfW * 2, h]} />
+        <meshStandardMaterial color="#e8dcc6" roughness={1} />
+      </mesh>
+      {[-1, 1].map((s) => (
+        <group key={s}>
+          <mesh position={[back - dir * 0.06, 1.37, zc + s * (0.045 + (halfW - 0.22) / 2)]}>
+            <boxGeometry args={[0.08, 2.74, halfW - 0.22]} />
+            <meshStandardMaterial color="#3b332a" roughness={0.52} metalness={0.3} envMapIntensity={0.5} />
+          </mesh>
+          {[0.72, 1.82].map((py) => (
+            <mesh
+              key={py}
+              position={[back - dir * 0.103, py, zc + s * (0.045 + (halfW - 0.22) / 2)]}
+            >
+              <boxGeometry args={[0.012, 0.92, halfW - 0.52]} />
+              <meshStandardMaterial color="#4a4034" roughness={0.45} metalness={0.35} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+      {/* brass surround of the door opening */}
+      {[-1, 1].map((s) => (
+        <mesh key={`j${s}`} position={[back - dir * 0.02, 1.38, zc + s * (halfW - 0.04)]}>
+          <boxGeometry args={[0.14, 2.76, 0.09]} />
+          <meshStandardMaterial color="#b9965a" roughness={0.4} metalness={0.8} />
+        </mesh>
+      ))}
+      <mesh position={[back - dir * 0.02, 2.78, zc]}>
+        <boxGeometry args={[0.14, 0.09, halfW * 2]} />
+        <meshStandardMaterial color="#b9965a" roughness={0.4} metalness={0.8} />
+      </mesh>
+      {/* handles and the seam of light under the leaves */}
+      {[-1, 1].map((s) => (
+        <mesh key={`h${s}`} position={[back - dir * 0.14, 1.22, zc + s * 0.105]}>
+          <boxGeometry args={[0.035, 0.82, 0.035]} />
+          <meshStandardMaterial color="#c9a86a" roughness={0.32} metalness={0.85} />
+        </mesh>
+      ))}
+      <mesh position={[back - dir * 0.115, 0.015, zc]}>
+        <boxGeometry args={[0.03, 0.03, halfW * 2 - 0.42]} />
+        <meshStandardMaterial color="#fff3dc" emissive="#ffe9c2" emissiveIntensity={1.1} roughness={1} />
+      </mesh>
+
+      <mesh rotation-x={Math.PI / 2} position={[cx, h - 0.005, zc]}>
+        <planeGeometry args={[ENTRY_DEPTH, halfW * 2]} />
+        <meshStandardMaterial color="#2b2723" emissive="#221d18" emissiveIntensity={0.4} roughness={0.95} />
+      </mesh>
+      <mesh rotation-x={Math.PI / 2} position={[cx, h - 0.03, zc]}>
+        <planeGeometry args={[ENTRY_DEPTH * 0.55, halfW * 2 - 0.7]} />
+        <meshStandardMaterial color="#f6ecd8" emissive="#ffe9c4" emissiveIntensity={0.75} roughness={1} />
+      </mesh>
+
+      {/* brass casing on the room side of the opening */}
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[wallX - dir * 0.05, h / 2, zc + s * (halfW + 0.05)]}>
+          <boxGeometry args={[0.1, h, 0.1]} />
+          <meshStandardMaterial color="#c9a86a" metalness={0.85} roughness={0.35} />
+        </mesh>
+      ))}
+      <mesh position={[wallX - dir * 0.05, h + 0.05, zc]}>
+        <boxGeometry args={[0.1, 0.1, halfW * 2 + 0.2]} />
+        <meshStandardMaterial color="#c9a86a" metalness={0.85} roughness={0.35} />
+      </mesh>
+
+      {/* stone threshold, wide enough to cover the floor seam */}
+      <mesh position={[wallX, 0.008, zc]} receiveShadow>
+        <boxGeometry args={[0.52, 0.016, halfW * 2]} />
+        <meshStandardMaterial color="#2a2622" roughness={0.5} metalness={0.2} />
+      </mesh>
+    </group>
+  )
+}
+
+function RoomShell({ hall, textures, activeHall, artworks, photo, envMap }) {
+  const b = hall.bounds
+  const door = hall.door
+  const westEntry = hall.side === 'west'
+  const photoWall = usePhotoWallMaterial(photo ? photo.plaster : null, envMap)
+  const wallMat = photoWall || useWallMaterial(textures.plaster)
+  const doorway = [
+    { start: door.center - door.width / 2, end: door.center + door.width / 2, top: door.height },
+  ]
+  const sky = { x0: b.x0 + 2.2, x1: b.x1 - 2.2, z0: b.z0 + 2.2, z1: b.z1 - 2.2 }
+
+  // The plaque hangs on the east wall next to the door, but a painting may
+  // already own that stretch of wall (hall 4 does). Step along the wall until a
+  // clear span is found so the sign never lands on a work.
+  const signZ = useMemo(() => {
+    const covered = artworks
+      .filter(
+        (a) =>
+          Math.abs(a.spot.x - b.x1) < 0.6 && a.spot.z > b.z0 - 1 && a.spot.z < b.z1 + 1
+      )
+      .map((a) => [a.spot.z - a.spot.w / 2 - 0.55, a.spot.z + a.spot.w / 2 + 0.55])
+    const dir = westEntry ? 1 : -1
+    const halfSpan = SIGN_W / 2 + 0.2
+    const fits = (z) =>
+      z - halfSpan > b.z0 + 0.4 &&
+      z + halfSpan < b.z1 - 0.4 &&
+      !covered.some(([lo, hi]) => z + halfSpan > lo && z - halfSpan < hi)
+    const offsets = [2.6, -2.6, 5.2, -5.2, 0, 7.4, -7.4]
+    const spot = offsets.map((o) => door.center + o * dir).find(fits)
+    return spot ?? door.center + 2.6 * dir
+  }, [artworks, b.x1, b.z0, b.z1, door.center, westEntry])
+
+  return (
+    <group>
+      {/* the floor runs on into the entrance bay, so there is no seam at the door */}
       <Floor
-        x0={b.x0}
-        x1={b.x1}
+        x0={westEntry ? b.x0 : b.x0 - ENTRY_DEPTH}
+        x1={westEntry ? b.x1 + ENTRY_DEPTH : b.x1}
         z0={b.z0}
         z1={b.z1}
         kind={hall.floor}
         marble={textures.marble}
         wood={textures.wood}
-        photo={photo ? photo.parquet : null}
-        envMap={envMap}
       />
 
       <WallRun axis="x" fixed={b.z0} from={b.x0 - T / 2} to={b.x1 + T / 2} height={b.h} material={wallMat} />
       <WallRun axis="x" fixed={b.z1} from={b.x0 - T / 2} to={b.x1 + T / 2} height={b.h} material={wallMat} />
-      <WallRun axis="z" fixed={b.x0} from={b.z0} to={b.z1} height={b.h} material={wallMat} />
-      <WallRun axis="z" fixed={b.x1} from={b.z0} to={b.z1} height={b.h} material={wallMat} />
+      <WallRun
+        axis="z"
+        fixed={b.x0}
+        from={b.z0}
+        to={b.z1}
+        height={b.h}
+        material={wallMat}
+        gaps={westEntry ? [] : doorway}
+      />
+      <WallRun
+        axis="z"
+        fixed={b.x1}
+        from={b.z0}
+        to={b.z1}
+        height={b.h}
+        material={wallMat}
+        gaps={westEntry ? doorway : []}
+      />
 
-      {/* ceiling with two recessed light lines */}
-      <CeilingPanel x0={b.x0} x1={b.x1} z0={b.z0} z1={b.z1} y={b.h} color="#2a2622" />
-      {[b.z0 + (b.z1 - b.z0) * 0.3, b.z0 + (b.z1 - b.z0) * 0.7].map((z, i) => (
-        <LightStrip key={i} position={[(b.x0 + b.x1) / 2, b.h - 0.005, z]} size={[3.6, 0.14]} intensity={1.5} />
-      ))}
+      {/* ceiling panels around a glazed roof, as in the lobby */}
+      <CeilingPanel x0={b.x0} x1={sky.x0} z0={b.z0} z1={b.z1} y={b.h} color="#2a2622" />
+      <CeilingPanel x0={sky.x1} x1={b.x1} z0={b.z0} z1={b.z1} y={b.h} color="#2a2622" />
+      <CeilingPanel x0={sky.x0} x1={sky.x1} z0={b.z0} z1={sky.z0} y={b.h} color="#2a2622" />
+      <CeilingPanel x0={sky.x0} x1={sky.x1} z0={sky.z1} z1={b.z1} y={b.h} color="#2a2622" />
+      <Skylight x0={sky.x0} x1={sky.x1} z0={sky.z0} z1={sky.z1} y={b.h} glow={0.42} />
+
+      <EntryBay hall={hall} />
 
       {activeHall === hall.id && <HallLighting hall={hall} artworks={artworks} />}
 
@@ -446,12 +691,8 @@ function RoomShell({ hall, textures, activeHall, artworks, photo, envMap }) {
         length={2.2}
       />
       <HallSign
-        position={
-          hall.side === 'west'
-            ? [b.x1 - 0.145, 2.25, door.center + 2.6]
-            : [b.x1 - 0.145, 2.25, door.center - 2.6]
-        }
-        rotation={hall.side === 'west' ? -Math.PI / 2 : Math.PI / 2}
+        position={[b.x1 - 0.168, 2.25, signZ]}
+        rotation={-Math.PI / 2}
         title={hall.name}
         subtitle={hall.en}
       />
@@ -484,10 +725,10 @@ function useWallMaterial(plaster) {
 /* ------------------------------------------------------------------ */
 /*  Lobby                                                              */
 /* ------------------------------------------------------------------ */
-function Lobby({ textures, activeHall }) {
+function Lobby({ textures, activeHall, photo, envMap }) {
   const lobby = HALLS.lobby
   const b = lobby.bounds
-  const wallMat = useWallMaterial(textures.plaster)
+  const wallMat = usePhotoWallMaterial(photo ? photo.plaster : null, envMap) || useWallMaterial(textures.plaster)
   const southGap = [
     { start: -lobby.entrance.width / 2, end: lobby.entrance.width / 2, top: lobby.entrance.height },
   ]
@@ -508,23 +749,16 @@ function Lobby({ textures, activeHall }) {
       <CeilingPanel x0={skylight.x0} x1={skylight.x1} z0={b.z0} z1={skylight.z0} y={b.h} />
       <CeilingPanel x0={skylight.x0} x1={skylight.x1} z0={skylight.z1} z1={b.z1} y={b.h} />
 
-      {/* glowing skylight + mullions */}
-              <mesh rotation-x={Math.PI / 2} position={[(skylight.x0 + skylight.x1) / 2, b.h + 0.75, (skylight.z0 + skylight.z1) / 2]}>
-        <planeGeometry args={[skylight.x1 - skylight.x0, skylight.z1 - skylight.z0]} />
-        <meshStandardMaterial color="#e6d7bc" emissive="#ffdcaa" emissiveIntensity={0.45} roughness={1} />
-      </mesh>
-      {[-1.6, 0, 1.6].map((x, i) => (
-        <mesh key={i} position={[(skylight.x0 + skylight.x1) / 2 + x, b.h + 0.4, (skylight.z0 + skylight.z1) / 2]}>
-          <boxGeometry args={[0.06, 0.32, skylight.z1 - skylight.z0]} />
-          <meshStandardMaterial color="#2f2b26" roughness={0.6} metalness={0.5} />
-        </mesh>
-      ))}
-      {[5.2, 8.4, 11.2].map((z, i) => (
-        <mesh key={i} position={[(skylight.x0 + skylight.x1) / 2, b.h + 0.4, z]}>
-          <boxGeometry args={[skylight.x1 - skylight.x0, 0.28, 0.05]} />
-          <meshStandardMaterial color="#2f2b26" roughness={0.6} metalness={0.5} />
-        </mesh>
-      ))}
+      {/* glazed roof with its mullion grid */}
+      <Skylight
+        x0={skylight.x0}
+        x1={skylight.x1}
+        z0={skylight.z0}
+        z1={skylight.z1}
+        y={b.h}
+        cols={4}
+        rows={4}
+      />
 
       {/* entry vestibule */}
       <group>
@@ -573,7 +807,7 @@ function Lobby({ textures, activeHall }) {
       <Bench position={[0, 0, 8.6]} length={2.2} />
       <Console position={[-7.2, 0, 2.0]} rotation={Math.PI / 2} />
 
-      <HallSign position={[6.2, 3.15, 0.145]} rotation={0} title="گالری آریانا" subtitle="ARIANA CONTEMPORARY GALLERY" />
+      <HallSign position={[6.2, 3.15, 0.168]} rotation={0} title="گالری آریانا" subtitle="ARIANA CONTEMPORARY GALLERY" />
     </group>
   )
 }
@@ -624,10 +858,10 @@ function HallArtworks({ hallId, artworks, onOpen }) {
 /* ------------------------------------------------------------------ */
 export default function Gallery({ activeHall, artworks, onOpenArtwork }) {
   const textures = useGalleryTextures()
-  // The photoreal set is fetched only while the visitor is inside the test hall.
-  const inPhotoHall = activeHall === PHOTOREAL_HALL
-  const photo = usePhotorealTextures(inPhotoHall)
-  const envMap = useStudioEnv(assetUrl('/tex/env_studio.webp'), inPhotoHall)
+  // Every wall uses the photo plaster, so the three small maps load with the
+  // scene instead of waiting for the visitor to enter one hall.
+  const photo = usePhotorealTextures()
+  const envMap = useStudioEnv(assetUrl('/tex/env_studio.webp'))
   const unlockVersion = useUnlockVersion()
 
   return (
@@ -654,7 +888,7 @@ export default function Gallery({ activeHall, artworks, onOpenArtwork }) {
         shadow-camera-far={90}
       />
 
-      <Lobby textures={textures} activeHall={activeHall} />
+      <Lobby textures={textures} activeHall={activeHall} photo={photo} envMap={envMap} />
       {HALL_ORDER.filter((id) => id !== 'lobby').map((id) => (
         <RoomShell
           key={id}
@@ -662,8 +896,8 @@ export default function Gallery({ activeHall, artworks, onOpenArtwork }) {
           textures={textures}
           activeHall={activeHall}
           artworks={artworks}
-          photo={id === PHOTOREAL_HALL ? photo : null}
-          envMap={id === PHOTOREAL_HALL ? envMap : null}
+          photo={photo}
+          envMap={envMap}
         />
       ))}
 
