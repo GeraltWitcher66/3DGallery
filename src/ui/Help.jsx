@@ -1,7 +1,17 @@
+import { useSyncExternalStore } from 'react'
+import { quality } from '../lib/quality'
 import { useModal } from '../lib/useModal'
+
+const QUALITY_OPTIONS = [
+  ['low', 'کم'],
+  ['medium', 'متوسط'],
+  ['high', 'زیاد'],
+  ['auto', 'خودکار'],
+]
 
 export default function Help({ onClose }) {
   const dialogRef = useModal(onClose)
+  const qualityMode = useSyncExternalStore(quality.subscribe, quality.getMode, quality.getMode)
 
   return (
     <div className="modal" role="dialog" aria-modal="true" aria-label="راهنمای گالری">
@@ -68,6 +78,25 @@ export default function Help({ onClose }) {
               </li>
             </ul>
           </div>
+        </div>
+
+        <div className="help-quality">
+          <h3>کیفیت نمایش</h3>
+          <div className="quality-row" role="group" aria-label="کیفیت نمایش">
+            {QUALITY_OPTIONS.map(([value, label]) => (
+              <button
+                key={value}
+                className={qualityMode === value ? 'is-active' : undefined}
+                aria-pressed={qualityMode === value}
+                onClick={() => quality.setMode(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="quality-note">
+            در حالت خودکار، کیفیت بر اساس روانی نمایش روی همین دستگاه کم و زیاد می‌شود.
+          </p>
         </div>
 
         <p className="modal-foot">

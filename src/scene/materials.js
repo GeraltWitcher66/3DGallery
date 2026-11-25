@@ -74,17 +74,17 @@ function tileMap(texture, rx, ry, srgb) {
   return t
 }
 
-/** A wall material built from the real plaster photos. */
-export function usePhotoWallMaterial(set, envMap) {
+/**
+ * A wall material built from the real plaster photos. `detail` drops the normal
+ * and roughness maps, which is the last quality step on slow devices.
+ */
+export function usePhotoWallMaterial(set, envMap, detail = true) {
   return useMemo(() => {
     if (!set) return null
-    return new THREE.MeshStandardMaterial({
-      // 13m x 3.4m wall: equal-ish repeats keep the plaster grain square
-      // instead of stretching it into horizontal streaks.
+    // 13m x 3.4m wall: equal-ish repeats keep the plaster grain square instead
+    // of stretching it into horizontal streaks.
+    const props = {
       map: tileMap(set[0], 10, 2.6, true),
-      roughnessMap: tileMap(set[1], 10, 2.6, false),
-      normalMap: tileMap(set[2], 10, 2.6, false),
-      normalScale: new THREE.Vector2(0.55, 0.55),
       color: '#9e988e',
       roughness: 0.96,
       metalness: 0,
@@ -92,8 +92,14 @@ export function usePhotoWallMaterial(set, envMap) {
       // The panorama is an 8-bit WebP, so it carries far less radiant power
       // than the HDR it replaced; the multiplier compensates.
       envMapIntensity: 0.85,
-    })
-  }, [set, envMap])
+    }
+    if (detail && set[1] && set[2]) {
+      props.roughnessMap = tileMap(set[1], 10, 2.6, false)
+      props.normalMap = tileMap(set[2], 10, 2.6, false)
+      props.normalScale = new THREE.Vector2(0.55, 0.55)
+    }
+    return new THREE.MeshStandardMaterial(props)
+  }, [set, envMap, detail])
 }
 
 /**

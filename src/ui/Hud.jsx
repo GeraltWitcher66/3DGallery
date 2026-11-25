@@ -1,7 +1,7 @@
 import { HALL_LIST } from '../data/gallery'
 import { preloadHall } from '../lib/preload'
 
-export default function Hud({ hall, onNavigate, isTouch, locked, showHint, onHelp, onIndex, onHome }) {
+export default function Hud({ hall, onNavigate, isTouch, locked, showHint, onHelp, onIndex, onHome, onSimple }) {
   return (
     <div className="hud">
       <header className="hud-top">
@@ -34,6 +34,9 @@ export default function Hud({ hall, onNavigate, isTouch, locked, showHint, onHel
           </button>
           <button className="ghost-btn" onClick={onHelp}>
             راهنما
+          </button>
+          <button className="ghost-btn ghost-btn-plain" onClick={onSimple}>
+            نمای ساده
           </button>
         </div>
       </header>

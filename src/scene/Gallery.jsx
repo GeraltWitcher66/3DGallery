@@ -606,11 +606,11 @@ function EntryBay({ hall }) {
   )
 }
 
-function RoomShell({ hall, textures, activeHall, artworks, photo, envMap }) {
+function RoomShell({ hall, textures, activeHall, artworks, photo, envMap, detail }) {
   const b = hall.bounds
   const door = hall.door
   const westEntry = hall.side === 'west'
-  const photoWall = usePhotoWallMaterial(photo ? photo.plaster : null, envMap)
+  const photoWall = usePhotoWallMaterial(photo ? photo.plaster : null, envMap, detail)
   const wallMat = photoWall || useWallMaterial(textures.plaster)
   const doorway = [
     { start: door.center - door.width / 2, end: door.center + door.width / 2, top: door.height },
@@ -725,10 +725,11 @@ function useWallMaterial(plaster) {
 /* ------------------------------------------------------------------ */
 /*  Lobby                                                              */
 /* ------------------------------------------------------------------ */
-function Lobby({ textures, activeHall, photo, envMap }) {
+function Lobby({ textures, activeHall, photo, envMap, detail }) {
   const lobby = HALLS.lobby
   const b = lobby.bounds
-  const wallMat = usePhotoWallMaterial(photo ? photo.plaster : null, envMap) || useWallMaterial(textures.plaster)
+  const wallMat =
+    usePhotoWallMaterial(photo ? photo.plaster : null, envMap, detail) || useWallMaterial(textures.plaster)
   const southGap = [
     { start: -lobby.entrance.width / 2, end: lobby.entrance.width / 2, top: lobby.entrance.height },
   ]
@@ -856,7 +857,7 @@ function HallArtworks({ hallId, artworks, onOpen }) {
 /* ------------------------------------------------------------------ */
 /*  Main scene                                                         */
 /* ------------------------------------------------------------------ */
-export default function Gallery({ activeHall, artworks, onOpenArtwork }) {
+export default function Gallery({ activeHall, artworks, onOpenArtwork, detail = true }) {
   const textures = useGalleryTextures()
   // Every wall uses the photo plaster, so the three small maps load with the
   // scene instead of waiting for the visitor to enter one hall.
@@ -888,7 +889,7 @@ export default function Gallery({ activeHall, artworks, onOpenArtwork }) {
         shadow-camera-far={90}
       />
 
-      <Lobby textures={textures} activeHall={activeHall} photo={photo} envMap={envMap} />
+      <Lobby textures={textures} activeHall={activeHall} photo={photo} envMap={envMap} detail={detail} />
       {HALL_ORDER.filter((id) => id !== 'lobby').map((id) => (
         <RoomShell
           key={id}
@@ -898,6 +899,7 @@ export default function Gallery({ activeHall, artworks, onOpenArtwork }) {
           artworks={artworks}
           photo={photo}
           envMap={envMap}
+          detail={detail}
         />
       ))}
 

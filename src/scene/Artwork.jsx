@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
 import { useTexture } from '@react-three/drei'
-import { artworkHover, input } from '../lib/input'
-import { assetUrl } from '../lib/asset'
+import { artworkHover, input, isTouchDevice } from '../lib/input'
+import { artSceneSource } from '../lib/artImages'
 
 // Soft dark halo behind the frame: a cheap stand-in for the ambient occlusion a
 // real gallery wall gets around a heavy frame. Built once for all 21 works.
@@ -62,7 +62,9 @@ function makeLabelTexture(art) {
 }
 
 export default function Artwork({ art, onOpen }) {
-  const tex = useTexture(assetUrl(art.img))
+  // Phones bind the medium copy; the full-size file is only fetched by the
+  // lightbox.
+  const tex = useTexture(artSceneSource(art.img, isTouchDevice()))
   const { spot } = art
   const w = spot.w
   const h = w / art.aspect

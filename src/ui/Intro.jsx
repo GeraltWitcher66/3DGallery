@@ -1,6 +1,6 @@
 import { HALL_LIST } from '../data/gallery'
 
-export default function Intro({ onEnter, onNavigate, progress, ready }) {
+export default function Intro({ onEnter, onNavigate, progress, ready, onSimple }) {
   return (
     <div className="intro">
       <div className="intro-bg" />
@@ -44,6 +44,11 @@ export default function Intro({ onEnter, onNavigate, progress, ready }) {
         <div className="intro-progress">
           <div className="intro-progress-bar" style={{ width: `${progress}%` }} />
         </div>
+        {onSimple && (
+          <button className="intro-simple" onClick={onSimple}>
+            نمای ساده
+          </button>
+        )}
       </div>
     </div>
   )
